@@ -1,0 +1,21 @@
+{
+  "name": "mazegame",
+  "version": "0.0.1",
+  "description": "A simple MazeGame",
+  "main": "app.js",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "test": "Hello World!"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iconium9000/3dMazeGame.git"
+  },
+  "author": "Iconium9000",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/iconium9000/3dMazeGame/issues"
+  },
+  "homepage": "https://github.com/iconium9000/3dMazeGame#readme"
+}
