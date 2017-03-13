@@ -1,64 +1,66 @@
-<canvas id="canvas" style="boarder:1px solid #000000" cursor="none">Your browser does not support canvas element.</canvas>
+<canvas id="canvas" style="boarder:1px solid #000000" cursor="none">
+	Your browser does not support canvas element
+</canvas>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.2.6/jquery.js"></script>
 <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
 <script src="client/gameWindow.js"></script>
 <script src="client/point.js"></script>
 <script src="client/game.js"></script>
 <script>
-console.log('index.html: init')
+	console.log('index.html: init')
 
-document.body.style.backgroundColor = 'black'
-mouse.r = 10
-var mousePrev = pt.copy(mouse)
-mousePrev.isDown = false
+	document.body.style.backgroundColor = 'black'
+	mouse.r = 10
+	var mousePrev = pt.copy(mouse)
+	mousePrev.isDown = false
 
-var level = new mg.Level()
+	var level = new mg.Level()
 
-tick()
+	tick()
 
-function tick(){
-	update()
+	function tick() {
+		update()
 
-	g.lineWidth = 4
-	g.strokeStyle = 'white'
-	g.fillStyle = 'white'
-	g.font = '12px Arial'
+		g.lineWidth = 3
+		g.strokeStyle = 'white'
+		g.fillStyle = 'white'
+		g.font = '12px Arial'
 
-	if (mouse.isDown) {
-		pt.sume(mg.shift,pt.sub(mouse,mousePrev))
-	}
-
-	for (var i in keyDown) {
-		if(keyDown[i]) {
-			console.log(i)
+		if (mouse.isDown) {
+			pt.sume(mg.shift, pt.sub(mouse, mousePrev))
 		}
+
+		for (var i in keyDown) {
+			if (keyDown[i]) {
+				console.log(i)
+			}
+		}
+		if (mouseUps) {
+			level.addCell(mouse)
+		}
+
+		level.draw(g)
+
+		g.fillStyle = 'black'
+		g.beginPath()
+		g.rect(5, 5, 2 * mg.cellSize, 10 * mg.cellSize)
+		g.fill()
+
+		g.strokeStyle = 'white'
+		g.beginPath()
+		g.rect(5, 5, 2 * mg.cellSize, 10 * mg.cellSize)
+		g.stroke()
+
+
+		for (var i in mg.modes) {
+			var m = mg.modes[i]
+			m.draw(g, m.order)
+		}
+
+		pt.drawCircle(g, mouse)
+
+		mousePrev = pt.copy(mouse)
+		mousePrev.isDown = mouse.isDown
+		reqFrame(tick)
 	}
-	if(mouseUps){
-		level.addCell(mouse)
-	}
-
-	level.draw(g)
-
-	g.fillStyle = 'black'
-	g.beginPath()
-	g.rect(5,5,2 * mg.cellSize,10 * mg.cellSize)
-	g.fill()
-
-	g.strokeStyle = 'white'
-	g.beginPath()
-	g.rect(5,5,2 * mg.cellSize,10 * mg.cellSize)
-	g.stroke()
-
-
-	for (var i in mg.modes) {
-		var m = mg.modes[i]
-		m.draw(g,m.order)
-	}
-
-	pt.drawCircle(g,mouse)
-
-	mousePrev = pt.copy(mouse)
-	mousePrev.isDown = mouse.isDown
-	reqFrame(tick)
-}
 </script>
