@@ -56,14 +56,14 @@ io.sockets.on('connection', function(socket) {
 // Tick
 // ----------------------------------------
 
-var dt = 20
-var state = {
-
-}
-
-setInterval( function() {
-	for (var i in sockets) {
-		var s = sockets[i]
-		s.emit('tick',state)
-	}
-}, dt)
+// var dt = 20
+// var state = {
+//
+// }
+//
+// setInterval( function() {
+// 	for (var i in sockets) {
+// 		var s = sockets[i]
+// 		s.emit('tick',state)
+// 	}
+// }, dt)

@@ -44,6 +44,12 @@ function getSize() {
 }
 
 // --------------------------------------------
+// ReqFrame
+// --------------------------------------------
+
+var reqFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function(callback) {window.setTimeout(callback, 30)}
+
+// --------------------------------------------
 // Mouse controls
 // --------------------------------------------
 $(canvas).css('cursor', 'none')

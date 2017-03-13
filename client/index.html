@@ -14,9 +14,9 @@ mousePrev.isDown = false
 
 var level = new mg.Level()
 
-var states = []
-socket.on('tick',function(s){
-	states.push(s)
+tick()
+
+function tick(){
 	update()
 
 	g.lineWidth = 4
@@ -59,9 +59,6 @@ socket.on('tick',function(s){
 
 	mousePrev = pt.copy(mouse)
 	mousePrev.isDown = mouse.isDown
-})
-
-
-
-
+	reqFrame(tick)
+}
 </script>
