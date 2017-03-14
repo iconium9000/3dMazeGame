@@ -94,6 +94,10 @@
 			}
 		}
 
+		g.textAlign = 'left'
+		g.fillStyle = 'white'
+		g.fillText(`fps:${Math.floor(1e3/dt)}`,5,5 + 2 * nmodes * mg.cellSize + 10)
+
 		mousePrev = pt.copy(mouse)
 		mousePrev.isDown = mouse.isDown
 		reqFrame(tick)

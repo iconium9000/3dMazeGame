@@ -2,8 +2,8 @@ console.log("game.js: init")
 try {
     pt = require('./point.js')
     console.log('game.js: init point.js')
-} catch(e) {
-    if(pt != null) {
+} catch (e) {
+    if (pt != null) {
         console.log('game.js: rcv point.js')
     } else {
         throw 'game.js: point.js not found'
@@ -48,7 +48,7 @@ var Level = mg.Level = class {
         p = mg.Cell.get(p)
         var s = getString(p)
         var c = this.cells[s]
-        if(this.cells[s] == null) {
+        if (this.cells[s] == null) {
             c = this.cells[s] = new mg.Cell(p, this)
         }
     }
@@ -56,13 +56,13 @@ var Level = mg.Level = class {
         p = mg.Cell.get(p)
         var s = getString(p)
         var c = this.cells[s]
-        if(c) {
+        if (c) {
             console.log('remove ' + s)
             delete this.cells[s]
         }
     }
     draw(g) {
-        for(var i in this.cells) {
+        for (var i in this.cells) {
             this.cells[i].draw(g)
         }
     }
@@ -83,6 +83,8 @@ mg.Cell = class {
     draw(g) {
         var p = pt.sum(pt.scale(this, mg.cellSize), mg.shift)
         g.strokeStyle = 'grey'
+        p.r = mg.cellWidth
+        g.beginPath()
         g.rect(p.x, p.y, mg.cellWidth, mg.cellWidth)
         g.fill()
     }
@@ -101,4 +103,4 @@ mg.Gate = class {
 }
 try {
     module.exports = mg
-} catch(e) {}
+} catch (e) {}
