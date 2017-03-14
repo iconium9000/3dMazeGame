@@ -14,50 +14,71 @@
 	var mousePrev = pt.copy(mouse)
 	mousePrev.isDown = false
 
-	var level = new mg.Level()
-
-	tick()
+	var level
+	socket.on('handShake', function(l) {
+		level = l
+		tick()
+	})
 
 	function tick() {
 		update()
 
-		g.lineWidth = 3
+		g.lineWidth = 1
 		g.strokeStyle = 'white'
 		g.fillStyle = 'white'
 		g.font = '12px Arial'
 
-		if (mouse.isDown) {
+		if (mg.mode == 'shift' && mouse.isDown) {
 			pt.sume(mg.shift, pt.sub(mouse, mousePrev))
 		}
 
-		for (var i in keyDown) {
-			if (keyDown[i]) {
-				console.log(i)
-			}
-		}
-		if (mouseUps) {
-			level.addCell(mouse)
-		}
+		level.draw(g, keyDown[' '])
 
-		level.draw(g)
 
+		var nmodes = mg.modeKeys.length
 		g.fillStyle = 'black'
 		g.beginPath()
-		g.rect(5, 5, 2 * mg.cellSize, 10 * mg.cellSize)
+		g.rect(5, 5, 2 * mg.cellSize, 2 * nmodes * mg.cellSize)
 		g.fill()
 
 		g.strokeStyle = 'white'
 		g.beginPath()
-		g.rect(5, 5, 2 * mg.cellSize, 10 * mg.cellSize)
+		g.rect(5, 5, 2 * mg.cellSize, 2 * nmodes * mg.cellSize)
 		g.stroke()
 
-
-		for (var i in mg.modes) {
-			var m = mg.modes[i]
-			m.draw(g, m.order)
+		for (var i in mg.modeKeys) {
+			var k = mg.modeKeys[i]
+			var m = mg.modes[k]
+			m.draw(g, i)
+			if (k == mg.mode) {
+				g.beginPath()
+				g.rect(5 + mg.cellSize / 2, 5 + mg.cellSize * (1 / 2 + 2 * i), mg.cellSize, mg.cellSize)
+				g.stroke()
+			}
 		}
 
-		pt.drawCircle(g, mouse)
+		if (2 * mg.cellSize >= mouse.x && mouse.x >= 5 && 2 * nmodes * mg.cellSize > mouse.y && mouse.y >= 5) {
+			var i = Math.floor((mouse.y - 5) / (2 * mg.cellSize))
+			g.strokeStyle = 'white'
+			g.beginPath()
+			g.rect(5 + mg.cellSize / 2, 5 + mg.cellSize * (1 / 2 + 2 * i), mg.cellSize, mg.cellSize)
+			g.stroke()
+
+			if (mouseUps && mouse.isDown) {
+				mg.mode = mg.modeKeys[i]
+			}
+		} else {
+			var m = pt.sum(mg.shift, pt.scale(mg.Cell.get(mouse), mg.cellSize))
+			g.strokeStyle = 'white'
+			var d = (mg.cellSize - mg.cellWidth) / 2
+			g.beginPath()
+			g.rect(m.x - d, m.y - d, mg.cellSize, mg.cellSize)
+			g.stroke()
+
+			if (mouseUps && mouse.isDown) {
+				level.addCell(mouse)
+			}
+		}
 
 		mousePrev = pt.copy(mouse)
 		mousePrev.isDown = mouse.isDown

@@ -2,8 +2,8 @@ console.log("game.js: init")
 try {
     pt = require('./point.js')
     console.log('game.js: init point.js')
-} catch (e) {
-    if (pt != null) {
+} catch(e) {
+    if(pt != null) {
         console.log('game.js: rcv point.js')
     } else {
         throw 'game.js: point.js not found'
@@ -17,9 +17,9 @@ var mg = {
     shift: pt.zero(),
     cellSize: 20,
     cellWidth: 15,
+    mode: 'shift',
     modes: {
         'shift': {
-            order: 0,
             draw: function(g, i) {
                 g.strokeStyle = 'white'
                 var y = mg.cellSize * (1 + 2 * i)
@@ -45,32 +45,40 @@ var mg = {
                 })
             }
         },
+        'remove': {
+            draw: function(g, i) {}
+        },
         'newCell': {
-            order: 1,
             draw: function(g, i) {
                 var y = mg.cellSize * (1 + 2 * i)
-
             }
         }
     }
 }
-mg.mode = mg.modes['shift']
-
+mg.modeKeys = Object.keys(mg.modes)
 var Level = mg.Level = class {
     constructor() {
         this.cells = []
+        this.cellArray = []
     }
     addCell(p) {
         p = mg.Cell.get(p)
         var s = getString(p)
         var c = this.cells[s]
-        if (this.cells[s] == null) {
+        if(this.cells[s] == null) {
             c = this.cells[s] = new mg.Cell(p, this)
+            this.cellArray.push(c)
         }
     }
-    draw(g) {
-        for (var i in this.cells) {
-            this.cells[i].draw(g)
+    draw(g, array) {
+        if(array) {
+            for(var i in this.cellArray) {
+                this.cellArray[i].draw(g)
+            }
+        } else {
+            for(var i in this.cells) {
+                this.cells[i].draw(g)
+            }
         }
     }
 }
@@ -98,21 +106,14 @@ mg.Cell.get = function(p) {
     return pt.floor(pt.factor(pt.sub(p, mg.shift), mg.cellSize))
 }
 mg.Player = class {
-    constructor() {
-
-    }
+    constructor() {}
 }
 mg.Player = class {
-    constructor() {
-
-    }
+    constructor() {}
 }
 mg.Gate = class {
-    constructor() {
-
-    }
+    constructor() {}
 }
-
 try {
     module.exports = mg
-} catch (e) {}
+} catch(e) {}

@@ -13,7 +13,7 @@ var pt = require('./client/point.js')
 var mg = require('./client/game.js')
 
 app.get('/', function(req, res) {
-    res.sendFile(__dirname + '/client/index.html')
+	res.sendFile(__dirname + '/client/index.html')
 })
 app.use('/client', express.static(__dirname + '/client'))
 
@@ -36,20 +36,20 @@ console.log("Server Active")
 var sockets = []
 
 io.sockets.on('connection', function(socket) {
-    do {
-        socket.id =
-            Math.random()
-    } while (sockets[socket.id] != null)
-    sockets[socket.id] = socket
-    console.log('socket connection ' + socket.id)
-    socket.emit('handShake')
-    socket.on('disconnect', function() {
-        console.log('disconnect socket ' + socket.id)
-        delete sockets[socket.id]
-    })
-    socket.on('msg', function(msg) {
-        console.log(msg)
-    })
+	do {
+		socket.id =
+			Math.random()
+	} while (sockets[socket.id] != null)
+	sockets[socket.id] = socket
+	console.log('socket connection ' + socket.id)
+	socket.emit('handShake')
+	socket.on('disconnect', function() {
+		console.log('disconnect socket ' + socket.id)
+		delete sockets[socket.id]
+	})
+	socket.on('msg', function(msg) {
+		console.log(msg)
+	})
 })
 
 // ----------------------------------------
