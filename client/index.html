@@ -10,9 +10,8 @@
 	console.log('index.html: init')
 
 	document.body.style.backgroundColor = 'black'
-	mouse.r = 10
-	var mousePrev = pt.copy(mouse)
-	mousePrev.isDown = false
+	mouse.prev = pt.copy(mouse)
+	mouse.prev.isDown = false
 
 	var level = new mg.Level()
 	socket.on('handShake', function(cs) {
@@ -31,12 +30,7 @@
 		g.font = '10px Arial'
 		g.textAlign = 'center'
 
-		if (mg.mode == 'pan' && mouse.isDown) {
-			pt.sume(mg.shift, pt.sub(mouse, mousePrev))
-		}
-
-		level.draw(g, keyDown[' '])
-
+		level.draw(g)
 
 		var nmodes = mg.modeKeys.length
 		g.fillStyle = 'black'
@@ -67,39 +61,30 @@
 			g.rect(5 + mg.cellSize / 2, 5 + mg.cellSize * (1 / 2 + 2 * i), mg.cellSize, mg.cellSize)
 			g.stroke()
 
-			if (mouseUps || mouse.isDown) {
+			if (mouse.ups || mouse.isDown) {
 				mg.mode = mg.modeKeys[i]
 				console.log('mode set to ' + mg.mode)
 			}
 		} else {
+			level.action(mg.mode, mouse, 'mouse')
+
 			var m = pt.sum(mg.shift, pt.scale(mg.Cell.get(mouse), mg.cellSize))
 			g.strokeStyle = 'white'
 			var d = (mg.cellSize - mg.cellWidth) / 2
 			g.beginPath()
 			g.rect(m.x - d, m.y - d, mg.cellSize, mg.cellSize)
 			g.stroke()
-
-			if (mouseUps || mouse.isDown) {
-				switch (mg.mode) {
-					case 'newCell':
-						level.addCell(mouse)
-						break
-					case 'removeCell':
-						level.removeCell(mouse)
-						break
-					case 'pan':
-					default:
-						break
-				}
-			}
 		}
 
 		g.textAlign = 'left'
 		g.fillStyle = 'white'
-		g.fillText(`fps:${Math.floor(1e3/dt)}`,5,5 + 2 * nmodes * mg.cellSize + 10)
+		g.fillText(`fps:${Math.floor(1e3/dt)}`, 5, 5 + 2 * nmodes * mg.cellSize + 10)
 
-		mousePrev = pt.copy(mouse)
-		mousePrev.isDown = mouse.isDown
+		g.fillStyle = 'white'
+		pt.fillCircle(g, mouse)
+
+		mouse.prev = pt.copy(mouse)
+		mouse.prev.isDown = mouse.isDown
 		reqFrame(tick)
 	}
 </script>
