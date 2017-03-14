@@ -14,9 +14,11 @@
 	var mousePrev = pt.copy(mouse)
 	mousePrev.isDown = false
 
-	var level
-	socket.on('handShake', function(l) {
-		level = l
+	var level = new mg.Level()
+	socket.on('handShake', function(cs) {
+		for (var i in cs) {
+			var c = cs[i]
+		}
 		tick()
 	})
 
@@ -28,7 +30,7 @@
 		g.fillStyle = 'white'
 		g.font = '12px Arial'
 
-		if (mg.mode == 'shift' && mouse.isDown) {
+		if (mg.mode == 'pan' && mouse.isDown) {
 			pt.sume(mg.shift, pt.sub(mouse, mousePrev))
 		}
 
@@ -64,7 +66,7 @@
 			g.rect(5 + mg.cellSize / 2, 5 + mg.cellSize * (1 / 2 + 2 * i), mg.cellSize, mg.cellSize)
 			g.stroke()
 
-			if (mouseUps && mouse.isDown) {
+			if (mouseUps || mouse.isDown) {
 				mg.mode = mg.modeKeys[i]
 			}
 		} else {
@@ -75,7 +77,7 @@
 			g.rect(m.x - d, m.y - d, mg.cellSize, mg.cellSize)
 			g.stroke()
 
-			if (mouseUps && mouse.isDown) {
+			if (mg.mode != 'pan' && (mouseUps || mouse.isDown)) {
 				level.addCell(mouse)
 			}
 		}

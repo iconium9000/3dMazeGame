@@ -17,9 +17,9 @@ var mg = {
     shift: pt.zero(),
     cellSize: 20,
     cellWidth: 15,
-    mode: 'shift',
+    mode: 'pan',
     modes: {
-        'shift': {
+        'pan': {
             draw: function(g, i) {
                 g.strokeStyle = 'white'
                 var y = mg.cellSize * (1 + 2 * i)
