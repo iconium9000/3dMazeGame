@@ -28,7 +28,8 @@
 		g.lineWidth = 1
 		g.strokeStyle = 'white'
 		g.fillStyle = 'white'
-		g.font = '12px Arial'
+		g.font = '10px Arial'
+		g.textAlign = 'center'
 
 		if (mg.mode == 'pan' && mouse.isDown) {
 			pt.sume(mg.shift, pt.sub(mouse, mousePrev))
@@ -68,6 +69,7 @@
 
 			if (mouseUps || mouse.isDown) {
 				mg.mode = mg.modeKeys[i]
+				console.log('mode set to ' + mg.mode)
 			}
 		} else {
 			var m = pt.sum(mg.shift, pt.scale(mg.Cell.get(mouse), mg.cellSize))
@@ -77,8 +79,18 @@
 			g.rect(m.x - d, m.y - d, mg.cellSize, mg.cellSize)
 			g.stroke()
 
-			if (mg.mode != 'pan' && (mouseUps || mouse.isDown)) {
-				level.addCell(mouse)
+			if (mouseUps || mouse.isDown) {
+				switch (mg.mode) {
+					case 'newCell':
+						level.addCell(mouse)
+						break
+					case 'removeCell':
+						level.removeCell(mouse)
+						break
+					case 'pan':
+					default:
+						break
+				}
 			}
 		}
 

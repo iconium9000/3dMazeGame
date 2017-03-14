@@ -21,36 +21,20 @@ var mg = {
     modes: {
         'pan': {
             draw: function(g, i) {
-                g.strokeStyle = 'white'
-                var y = mg.cellSize * (1 + 2 * i)
-                pt.drawLine(g, {
-                    a: {
-                        x: 5 + mg.cellSize - mg.cellWidth / 2,
-                        y: 5 + y
-                    },
-                    b: {
-                        x: 5 + mg.cellSize + mg.cellWidth / 2,
-                        y: 5 + y
-                    }
-                })
-                pt.drawLine(g, {
-                    a: {
-                        x: 5 + mg.cellSize,
-                        y: 5 + y - mg.cellWidth / 2
-                    },
-                    b: {
-                        x: 5 + mg.cellSize,
-                        y: 5 + y + mg.cellWidth / 2
-                    }
-                })
+                g.fillStyle = 'white'
+                g.fillText('Pan', 5 + mg.cellSize, 5 + mg.cellSize * (1 + 2 * i))
             }
         },
-        'remove': {
-            draw: function(g, i) {}
+        'removeCell': {
+            draw: function(g, i) {
+                g.fillStyle = 'white'
+                g.fillText('Del', 5 + mg.cellSize, 5 + mg.cellSize * (1 + 2 * i))
+            }
         },
         'newCell': {
             draw: function(g, i) {
-                var y = mg.cellSize * (1 + 2 * i)
+                g.fillStyle = 'white'
+                g.fillText('NwC', 5 + mg.cellSize, 5 + mg.cellSize * (1 + 2 * i))
             }
         }
     }
@@ -59,7 +43,6 @@ mg.modeKeys = Object.keys(mg.modes)
 var Level = mg.Level = class {
     constructor() {
         this.cells = []
-        this.cellArray = []
     }
     addCell(p) {
         p = mg.Cell.get(p)
@@ -67,18 +50,20 @@ var Level = mg.Level = class {
         var c = this.cells[s]
         if(this.cells[s] == null) {
             c = this.cells[s] = new mg.Cell(p, this)
-            this.cellArray.push(c)
         }
     }
-    draw(g, array) {
-        if(array) {
-            for(var i in this.cellArray) {
-                this.cellArray[i].draw(g)
-            }
-        } else {
-            for(var i in this.cells) {
-                this.cells[i].draw(g)
-            }
+    removeCell(p) {
+        p = mg.Cell.get(p)
+        var s = getString(p)
+        var c = this.cells[s]
+        if(c) {
+            console.log('remove ' + s)
+            delete this.cells[s]
+        }
+    }
+    draw(g) {
+        for(var i in this.cells) {
+            this.cells[i].draw(g)
         }
     }
 }
@@ -97,9 +82,9 @@ mg.Cell = class {
     }
     draw(g) {
         var p = pt.sum(pt.scale(this, mg.cellSize), mg.shift)
-        g.strokeStyle = 'white'
+        g.strokeStyle = 'grey'
         g.rect(p.x, p.y, mg.cellWidth, mg.cellWidth)
-        g.stroke()
+        g.fill()
     }
 }
 mg.Cell.get = function(p) {
