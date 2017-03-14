@@ -61,7 +61,7 @@
 			g.rect(5 + mg.cellSize / 2, 5 + mg.cellSize * (1 / 2 + 2 * i), mg.cellSize, mg.cellSize)
 			g.stroke()
 
-			if (mouse.ups || mouse.isDown) {
+			if (mouse.hasUp || mouse.isDown) {
 				mg.mode = mg.modeKeys[i]
 				console.log('mode set to ' + mg.mode)
 			}

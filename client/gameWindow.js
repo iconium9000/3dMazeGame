@@ -7,7 +7,7 @@ var keyUps = []
 var eventQueue = []
 
 function update() {
-	mouse.ups = 0
+	mouse.hasUp = 0
 	keyUps = []
 	setTime()
 	getSize()
@@ -27,7 +27,8 @@ var mouse = {
 	r: 5,
 	isDown: false,
 	hasDragged: false,
-	ups: 0
+	hasDown: false,
+	hasUp: false
 }
 
 function setTime() {
@@ -73,7 +74,7 @@ $(document).mouseup(function (e) {
 	eventQueue.push(function () {
 		setMouse(e)
 		mouse.isDown = false
-		mouse.ups = true
+		mouse.hasUp = true
 	})
 })
 // --------------------------------------------

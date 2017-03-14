@@ -2,22 +2,27 @@ console.log("game.js: init")
 try {
 	pt = require('./point.js')
 	console.log('game.js: init point.js')
-}
-catch (e) {
+} catch (e) {
 	if (pt != null) {
 		console.log('game.js: rcv point.js')
-	}
-	else {
+	} else {
 		throw 'game.js: point.js not found'
 	}
 }
 
-function getString(p) {
-	return {
-		s: `${p.x},${p.y}`,
-		x: p.x,
-		y: p.y,
-		z: p.z
+function getString(input, a0) {
+	if (a0 == 'string') {
+		return input
+	} else if (a0 == 'mouse') {
+		var p = mg.Cell.get(input)
+		p.s = `${p.x},${p.y}`
+		return p
+	} else if (a0 == 'point') {
+		var p = pt.copy(input)
+		p.s = `${p.x},${p.y}`
+		return p
+	} else {
+		console.log(`invalid ${cmd} a0: ${a0}`)
 	}
 }
 var mg = {
@@ -37,18 +42,18 @@ var mg = {
 				g.fillText('Pan', 5 + cs, 5 + cs * (1 + 2 * i))
 			}
 		},
-		'removeCell': {
+		'space': {
 			draw: function (g, i) {
 				g.fillStyle = 'white'
 				var cs = mg.cellSize
-				g.fillText('Del', 5 + cs, 5 + cs * (1 + 2 * i))
+				g.fillText('Spc', 5 + cs, 5 + cs * (1 + 2 * i))
 			}
 		},
-		'addCell': {
+		'wall': {
 			draw: function (g, i) {
 				g.fillStyle = 'white'
 				var cs = mg.cellSize
-				g.fillText('NwC', 5 + cs, 5 + cs * (1 + 2 * i))
+				g.fillText('Wll', 5 + cs, 5 + cs * (1 + 2 * i))
 			}
 		}
 	}
@@ -58,46 +63,52 @@ var Level = mg.Level = class {
 	constructor() {
 		this.cells = []
 	}
-	action(cmd, input, parameter) {
-		function getS() {
-			if (parameter == 'string') {
-				return input
-			}
-			else if (parameter == 'mouse') {
-				return getString(mg.Cell.get(input))
-			}
-			else if (parameter == 'point') {
-				return getString(input)
-			}
-			else {
-				console.log(`invalid ${cmd} parameter: ${parameter}`)
-			}
+	// input: <string/mouse/point>
+	// a0: 'string' or 'mouse' or 'point'
+	// a1: true (delete cell) or false (add cell)
+	getCell(input, a0, a1) {
+		var o = getString(input, a0)
+		var c = this.cells[o.s]
+		if ((c == null) == a1) {
+			return c
+		} else if (a1) {
+			return this.cells[o.s] = new mg.Cell(o, this)
+		} else {
+			delete this.cells[o.s]
+			return c
 		}
+	}
+	state(cmd) {}
+	// cmd: 'pan' or 'space' or 'wall' or 'door' or 'wire' or 'pad' or 'portal'
+	// input: <string/mouse/point>
+	// a0: 'string' or 'mouse' or 'point'
+	// a1:
+	action(cmd, input, a0, a1) {
 		switch (cmd) {
 			case 'pan':
 				if (input.isDown) {
 					pt.sume(mg.shift, pt.sub(input, input.prev))
 				}
 				break
-			case 'removeCell':
+			case 'space':
 				if (!input.isDown && !input.ups) {
 					break
 				}
-				var s = getS().s
-				if (this.cells[s]) {
-					this.cells[s].kill()
-					delete this.cells[s]
+				var c = this.getCell(input, a0, !a1)
+				if (c != null) {
+					c.action(input, a1)
 				}
 				break
-			case 'addCell':
+			case 'wall':
 				if (!input.isDown && !input.ups) {
 					break
 				}
-				var o = getS()
-				console.log('addCell')
-				if (this.cells[o.s] == null) {
-					this.cells[o.s] = new mg.Cell(o, this)
+				var o = getString()
+				var c = this.cells[o.s]
+				if (c == null) {
+					c = this.cells[o.s] = new mg.Cell(o, this)
 				}
+				c.action(cmd, a1)
 				break
 		}
 	}
@@ -119,10 +130,56 @@ mg.Cell = class {
 		this.isWire = false
 		this.isPad = false
 		this.isPortal = false
-		console.log('newCell: ' + getString(this).s)
+		console.log('newCell: ' + this.s)
 	}
-	kill() {
-		console.log()
+	state(cmd) {
+		switch (cmd) {
+			case 'space':
+				return !(this.isWall || this.isDoor || this.isWire || this.isDoor || this.isPad || this.isPortal)
+			case 'wall':
+				return this.isWall
+			case 'door':
+				return this.isDoor
+			case 'wire':
+				return this.isWire
+			case 'pad':
+				return this.isPad
+			case 'portal':
+				return this.isPortal
+		}
+	}
+	action(cmd, a0) {
+		switch (cmd) {
+			case 'space':
+				if (a0) {
+					this.isWall = false
+					this.isDoor = false
+					this.isWire = false
+					this.isPad = false
+					this.isPortal = false
+				} else {
+					console.log('kill: ' + this.s)
+				}
+				break
+			case 'wall':
+				this.isWall = a0
+				this.isPad = false
+				this.isPortal = false
+				break
+			case 'door':
+				this.isDoor = a0
+				this.isPad = false
+				this.isPortal = false
+				break
+			case 'pad':
+				this.isPad = a0
+				this.isDoor = false
+				this.isPortal = false
+				this.isWall = false
+				break
+			case 'portal':
+				this.isPortal = !this.isPad
+		}
 	}
 	draw(g) {
 		var p = pt.sum(pt.scale(this, mg.cellSize), mg.shift)
@@ -147,5 +204,4 @@ mg.Gate = class {
 }
 try {
 	module.exports = mg
-}
-catch (e) {}
+} catch (e) {}
