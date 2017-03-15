@@ -66,7 +66,11 @@
 				console.log('mode set to ' + mg.mode)
 			}
 		} else {
-			level.action(mg.mode, mouse, 'mouse')
+			if (mouse.hasDown) {
+				mg.state = !level.getState(mouse, 'mouse', mg.mode)
+				console.log(mg.mode + ' ' + mg.state)
+			}
+			level.action(mg.mode, mouse, 'mouse', mg.state)
 
 			var m = pt.sum(mg.shift, pt.scale(mg.Cell.get(mouse), mg.cellSize))
 			g.strokeStyle = 'white'
@@ -75,6 +79,8 @@
 			g.rect(m.x - d, m.y - d, mg.cellSize, mg.cellSize)
 			g.stroke()
 		}
+
+		level.update(keyUps)
 
 		g.textAlign = 'left'
 		g.fillStyle = 'white'
