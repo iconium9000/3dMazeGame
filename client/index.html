@@ -12,6 +12,7 @@
 	document.body.style.backgroundColor = 'black'
 	mouse.prev = pt.copy(mouse)
 	mouse.prev.isDown = false
+	var tickCounter = 0
 
 	var level = new mg.Level()
 	socket.on('handShake', function(cs) {
@@ -20,8 +21,12 @@
 		}
 		tick()
 	})
+	socket.on('msg', function(msg) {
+		console.log(msg)
+	})
 
 	function tick() {
+		++tickCounter
 		update()
 
 		g.lineWidth = 1
@@ -30,7 +35,7 @@
 		g.font = '10px Arial'
 		g.textAlign = 'center'
 
-		level.draw(g)
+		level.get('draw', g)
 
 		var nmodes = mg.modeKeys.length
 		g.fillStyle = 'black'
@@ -67,11 +72,22 @@
 			}
 		} else {
 			if (mouse.hasDown) {
-				mg.state = !level.getState(mouse, 'mouse', mg.mode)
-				console.log(mg.mode + ' ' + mg.state)
+				mg.state = !level.get('state', {
+					input: mouse,
+					inputType: 'mouse'
+				})
 			}
-			level.action(mg.mode, mouse, 'mouse', mg.state)
-
+			if (mg.mode == 'pan') {
+				level.action('pan', mouse)
+			} else {
+				level.action('state', {
+					input: mouse,
+					inputType: 'mouse',
+					mode: mg.mode,
+					state: mg.state,
+					tick: tickCounter
+				})
+			}
 			var m = pt.sum(mg.shift, pt.scale(mg.Cell.get(mouse), mg.cellSize))
 			g.strokeStyle = 'white'
 			var d = (mg.cellSize - mg.cellWidth) / 2
@@ -80,7 +96,7 @@
 			g.stroke()
 		}
 
-		level.update(keyUps)
+		level.action('update')
 
 		g.textAlign = 'left'
 		g.fillStyle = 'white'
