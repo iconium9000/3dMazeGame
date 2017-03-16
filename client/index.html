@@ -71,15 +71,17 @@
 				console.log('mode set to ' + mg.mode)
 			}
 		} else {
-			if (mouse.hasDown) {
-				mg.state = !level.get('state', {
-					input: mouse,
-					inputType: 'mouse'
-				})
-			}
 			if (mg.mode == 'pan') {
 				level.action('pan', mouse)
 			} else {
+				if (mouse.hasDown) {
+					mg.state = !level.get('state', {
+						input: mouse,
+						inputType: 'mouse',
+						state: mg.mode
+					})
+					console.log(`mg.state = ${mg.state}`)
+				}
 				level.action('state', {
 					input: mouse,
 					inputType: 'mouse',
