@@ -10,35 +10,50 @@ try {
     }
 }
 
-function getString(input, inputType) {
-    if (inputType == 'string') {
-        var s = input.split(',')
-        if (s.length != 2) {
-            throw `invalid input ${input}`
-        }
-        var p = {
-            x: parseFloat(s[0]),
-            y: parseFloat(s[1]),
-            z: 0
-        }
-        if (isNaN(p.x)) {
-            throw `invalid floating point ${s[0]}`
-        } else if (isNaN(p.y)) {
-            throw `invalid floating point ${s[1]}`
-        } else {
-
+function getString(token, input) {
+    switch (token) {
+        case 'pair':
+            var a = input.a
+            var b = input.b
+            switch (a.x > b.x ? 1 : b.x > a.x ? -1 : a.y > b.y ? 1 : b.y > a.y ? -1 : 0) {
+                case 1:
+                    return {
+                        a: a,
+                        b: b,
+                        s: `[${a.s}],[${b.s}]`
+                    }
+                case -1:
+                    return `[${a.s}],[${b.s}]`
+                case 0:
+                    throw `getString('pair') Points are equal: [${a.s}],[${b.s}]`
+            }
+        case 'string':
+            var s = input.split(',')
+            if (s.length != 2) {
+                throw `getString('string') invalid input '${input}'`
+            }
+            var p = {
+                x: parseFloat(s[0]),
+                y: parseFloat(s[1]),
+                z: 0
+            }
+            if (isNaN(p.x)) {
+                throw `getString('string') invalid floating point '${s[0]}'`
+            } else if (isNaN(p.y)) {
+                throw `getString('string') invalid floating point '${s[1]}'`
+            } else {
+                return p
+            }
+        case 'mouse':
+            var p = mg.Cell.get(input)
+            p.s = `${p.x},${p.y}`
             return p
-        }
-    } else if (inputType == 'mouse') {
-        var p = mg.Cell.get(input)
-        p.s = `${p.x},${p.y}`
-        return p
-    } else if (inputType == 'point') {
-        var p = pt.copy(input)
-        p.s = `${p.x},${p.y}`
-        return p
-    } else {
-        throw `invalid token: ${inputType}`
+        case 'point':
+            var p = pt.copy(input)
+            p.s = `${p.x},${p.y}`
+            return p
+        default:
+            throw `getString invalid token: '${token}'`
     }
 }
 
@@ -184,16 +199,21 @@ var Level = mg.Level = class {
     constructor() {
         this.cells = []
         this.actions = []
+        this.wires = []
+        this.portals = []
+        this.gates = []
     }
     get(token, input) {
         switch (token) {
+            case 'cell':
+                return this.cells[getString(input.inputType, input.input).s]
             case 'draw':
                 for (var i in this.cells) {
                     this.cells[i].get('draw', input)
                 }
                 break
             case 'state':
-                var c = this.cells[getString(input.input, input.inputType).s]
+                var c = this.cells[getString(input.inputType, input.input).s]
                 if (input.state) {
                     return c ? c[input.state] : false
                 } else {
@@ -219,10 +239,17 @@ var Level = mg.Level = class {
             case 'state':
                 // input: {input, inputType(), mode(mg.mode), state(bool)}
                 if (input.input.isDown || input.input.ups) {
-                    var o = getString(input.input, input.inputType)
-                    var c = this.cells[o.s] = this.cells[o.s] || new mg.Cell(o, this)
-                    c.action('state', input)
-                    break
+                    var o = getString(input.inputType, input.input)
+                    var c = this.cells[o.s]
+                    if (c || input.state) {
+                        if (c == null) {
+                            c = this.cells[o.s] = new mg.Cell(o, this)
+                        }
+                        c.action('state', input)
+                        break
+                    } else {
+                        return
+                    }
                 } else {
                     return
                 }
@@ -278,11 +305,33 @@ mg.Cell = class {
                 }
                 this.tick = input.tick
                 var s = this.get('state')
-                if (s == null) {
+                if (s) {
                     for (var i in mg.directions) {
-                        console.log(i)
+                        var c = this[i] = this.level.get('cell', {
+                            input: pt.sum(this, mg.directions[i]),
+                            inputType: 'point'
+                        })
+                        if (c) {
+                            var p = {
+                                a: this,
+                                b: c
+                            }
+                            var s = getString('pair', p)
+                            if (this.wire && c.wire) {
+                                this.level.wires[s] = p
+                            } else if (this.level.wires[s]) {
+                                delete this.level.wires[s]
+                            }
+                        }
                     }
+                } else {
                     delete this.level.cells[this.s]
+                    for (var i in mg.directions) {
+                        var c = this[i]
+                        if (c) {
+                            c.update('update', input)
+                        }
+                    }
                 }
 
                 break
