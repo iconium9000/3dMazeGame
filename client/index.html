@@ -92,9 +92,8 @@
 			}
 			var m = pt.sum(mg.shift, pt.scale(mg.Cell.get(mouse), mg.cellSize))
 			g.strokeStyle = 'white'
-			var d = (mg.cellSize - mg.cellWidth) / 2
 			g.beginPath()
-			g.rect(m.x - d, m.y - d, mg.cellSize, mg.cellSize)
+			g.rect(m.x - mg.cellSize / 2, m.y - mg.cellSize / 2, mg.cellSize, mg.cellSize)
 			g.stroke()
 		}
 
