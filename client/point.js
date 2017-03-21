@@ -143,6 +143,16 @@ var pt = {
 		g.beginPath()
 		g.arc(c.x, c.y, c.r, c.r, 0, 2 * Math.PI)
 		g.fill()
+	},
+	drawRect: function (g, c) {
+		g.beginPath()
+		g.rect(c.x - c.r, c.y - c.r, 2 * c.r, 2 * c.r)
+		g.stroke()
+	},
+	fillRect: function (g, c) {
+		g.beginPath()
+		g.rect(c.x - c.r, c.y - c.r, 2 * c.r, 2 * c.r)
+		g.fill()
 	}
 }
 pt.draw = function (g, c) {

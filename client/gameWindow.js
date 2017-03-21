@@ -6,6 +6,14 @@ var keyDown = []
 var keyUps = []
 var eventQueue = []
 
+var keyDownEmitter = new Emitter()
+
+document.onkeydown = function (e) {
+	e = e || window.event;
+	keyDownEmitter.emit(e.key, e)
+}
+
+
 function update() {
 	mouse.hasUp = false
 	mouse.hasDown = false

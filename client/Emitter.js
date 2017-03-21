@@ -1,5 +1,5 @@
 console.log('Emitter.js: init')
-module.exports = class {
+class Emitter {
 	constructor() {
 		this.events = []
 	}
@@ -15,3 +15,7 @@ module.exports = class {
 		}
 	}
 }
+
+try {
+	module.exports = Emitter
+} catch (e) {}

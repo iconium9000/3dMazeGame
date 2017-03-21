@@ -76,89 +76,49 @@ var mg = {
 	mode: 'pan',
 	directions: {
 		'up': {
+			key: 'ArrowUp',
 			x: 0,
 			y: -1,
 			z: 0
 		},
 		'dn': {
+			key: 'ArrowDown',
 			x: 0,
 			y: 1,
 			z: 0
 		},
 		'rt': {
+			key: 'ArrowRight',
 			x: 1,
 			y: 0,
 			z: 0
 		},
 		'lf': {
+			key: 'ArrowLeft',
 			x: -1,
 			y: 0,
 			z: 0
 		},
 	},
-	getStateToken: function (token, newSuperState, currentState) {
-		switch (token[newSuperState ? 0 : 1]) {
-			case 't':
-				return true
-			case 'f':
-				return false
-			case 'o':
-				if (currentState == null) {
-					return false
-				} else {
-					return currentState
-				}
-		}
-	},
 	states: {
+		'wire': {
+
+		},
 		'space': {
-			'space': 'tf',
-			'wall': 'fo',
-			'door': 'fo',
-			'pad': 'fo',
-			'portal': 'fo',
-			'wire': 'fo'
+
 		},
 		'wall': {
-			'space': 'fo',
-			'wall': 'tf',
-			'door': 'fo',
-			'pad': 'fo',
-			'portal': 'fo',
-			'wire': 'oo'
+
 		},
 		'door': {
-			'space': 'fo',
-			'wall': 'fo',
-			'door': 'tf',
-			'pad': 'fo',
-			'portal': 'fo',
-			'wire': 'to'
+
 		},
 		'pad': {
-			'space': 'fo',
-			'wall': 'fo',
-			'door': 'fo',
-			'pad': 'tf',
-			'portal': 'fo',
-			'wire': 'to'
+
 		},
 		'portal': {
-			'space': 'fo',
-			'wall': 'fo',
-			'door': 'fo',
-			'pad': 'fo',
-			'portal': 'tf',
-			'wire': 'to'
-		},
-		'wire': {
-			'space': 'fo',
-			'wall': 'oo',
-			'door': 'of',
-			'pad': 'of',
-			'portal': 'of',
-			'wire': 'tf'
-		},
+
+		}
 	},
 	modes: {
 		'pan': {
@@ -166,35 +126,45 @@ var mg = {
 			color: null,
 			draw: tempModeDraw('Pan')
 		},
-		'space': {
-			key: 'x',
-			color: 'rgba(64, 64, 64, 0.3)',
-			draw: tempModeDraw('Spc')
-		},
-		'wall': {
-			key: 'w',
-			color: 'rgb(128, 128, 128)',
-			draw: tempModeDraw('Wll')
-		},
-		'door': {
-			key: 'd',
-			color: 'rgb(0,200,0)',
-			draw: tempModeDraw('Dor')
-		},
-		'pad': {
-			key: 'h',
-			color: 'rgb(100,0,0)',
-			draw: tempModeDraw('Pad')
-		},
-		'portal': {
-			key: 'p',
-			color: 'rgb(100,0,100)',
-			draw: tempModeDraw('Prtl')
-		},
 		'wire': {
 			key: 'i',
 			color: 'rgb(100,100,0)',
 			draw: tempModeDraw('Wir')
+		},
+		'space': {
+			key: 'x',
+			color: 'rgba(128, 128, 128, 0.75)',
+			draw: tempModeDraw('Spc')
+		},
+		'wall': {
+			key: 'w',
+			color: 'rgba(255, 255, 255, 0.75)',
+			draw: tempModeDraw('Wll')
+		},
+		'door': {
+			key: 'd',
+			color: 'rgba(0,255,0, 0.75)',
+			draw: tempModeDraw('Dor')
+		},
+		'pad': {
+			key: 'h',
+			color: 'rgba(255,0,0, 0.5)',
+			draw: tempModeDraw('Pad')
+		},
+		'portal': {
+			key: 'p',
+			color: 'rgba(255,0,255, 1)',
+			draw: tempModeDraw('Prtl')
+		},
+		'key': {
+			key: 'k',
+			color: 'white',
+			draw: tempModeDraw('key')
+		},
+		'player': {
+			key: 'j',
+			color: 'white',
+			draw: tempModeDraw('plr')
 		}
 	}
 }
@@ -204,8 +174,9 @@ var Level = mg.Level = class {
 		this.cells = []
 		this.actions = []
 		this.wires = []
-		this.portals = []
 		this.gates = []
+		this.players = []
+		this.keys = []
 	}
 	get(token, input) {
 		switch (token) {
@@ -218,39 +189,80 @@ var Level = mg.Level = class {
 					return pt.sum(mg.shift, pt.scale(p, mg.cellSize))
 				}
 
-				for (var i in this.cells) {
-					var c = this.cells[i]
-					var p = shift(c)
-					g.fillStyle = mg.modes[c.get('state')].color
-					p.r = mg.cellWidth
-					g.beginPath()
-					g.rect(p.x - mg.cellWidth / 2, p.y - mg.cellWidth / 2, mg.cellWidth, mg.cellWidth)
-					g.fill()
-				}
 				for (var i in this.wires) {
 					var w = this.wires[i]
+					g.strokeStyle = 'green'
 					pt.drawLine(g, {
 						a: shift(w.a),
 						b: shift(w.b)
 					})
 				}
+
+				for (var i in this.cells) {
+					var c = this.cells[i]
+
+					var p = shift(c)
+
+					for (var i in mg.states) {
+						if (c[i]) {
+							switch (i) {
+								case 'wire':
+									p.r = 2
+									g.fillStyle = 'green'
+									pt.fillRect(g, p)
+									break
+								case 'space':
+									p.r = mg.cellWidth / 2
+									g.fillStyle = mg.modes.space.color
+									pt.fillRect(g, p)
+									break
+								case 'wall':
+									p.r = mg.cellSize / 2
+									g.fillStyle = mg.modes.wall.color
+									pt.fillRect(g, p)
+									break
+								case 'door':
+									p.r = mg.cellSize / 2
+									g.fillStyle = mg.modes.door.color
+									pt.fillRect(g, p)
+									break
+								case 'pad':
+									p.r = mg.cellWidth / 2
+									g.fillStyle = mg.modes.pad.color
+									pt.fillRect(g, p)
+									break
+								case 'portal':
+									p.r = mg.cellWidth / 2 + 1
+									g.strokeStyle = mg.modes.portal.color
+									pt.drawRect(g, p)
+									break
+							}
+						}
+					}
+				}
+
 				break
 			case 'state':
 				var c = this.cells[getString(input.inputType, input.input).s]
 				if (input.state) {
 					return c ? c[input.state] : false
 				} else {
-					if (c) {
-						console.log('state: ' + c.get('state', null))
-					} else {
-						console.log("no c found")
-					}
 					return c ? c.get('state', null) : null
 				}
 		}
 	}
 	action(token, input) {
 		switch (token) {
+			case 'move':
+				if (this.player) {
+					if (this.player.cell.pad) {
+						this.player.cell.player = null
+						this.player.cell.gate.action('update')
+					}
+
+
+				}
+				break
 			case 'clear':
 				this.cells = []
 				break
@@ -307,12 +319,56 @@ mg.Cell = class {
 		}
 	}
 	action(token, input) {
-		console.log(`[${this.s}].action('${token}')`)
 		switch (token) {
 			case 'state':
-				var sc = mg.states[input.mode]
-				for (var i in sc) {
-					this[i] = mg.getStateToken(sc[i], input.state, this[i])
+				switch (input.mode) {
+					case 'wire':
+						if (input.state) {
+							this.wire = true
+							if (!this.wall && !this.door && !this.pad && !this.portal) {
+								this.space = true
+							}
+						} else {
+							this[this.door || this.wall ? 'wall' : 'space'] = true
+							this.wire = this.door = this.pad = this.portal = false
+						}
+						break
+					case 'space':
+						if (input.state) {
+							this.space = true
+							this.wall = this.door = this.pad = this.portal = false
+						} else if (this.space) {
+							this.space = this.portal = this.wire = false
+						}
+						break
+					case 'wall':
+						if (input.state) {
+							this.space = this.door = this.pad = this.portal = false
+							this.wall = true
+						} else if (this.wall) {
+							if (this.wire) {
+								this.space = true
+							}
+							this.wall = false
+						}
+						break
+					case 'door':
+					case 'pad':
+					case 'portal':
+						if (input.state) {
+							for (var i in mg.states) {
+								this[i] = i == 'wire' || i == input.mode || (i == 'space' && input.mode == 'portal')
+							}
+						} else if (this[input.mode]) {
+							this[input.mode] = false
+							this[input.mode == 'door' ? 'wall' : 'space'] = true
+						}
+						break
+					case 'key':
+						break
+					case 'player':
+						console.log('action(player)')
+						break
 				}
 			case 'update':
 				if (this.tick == input.tick) {
@@ -331,15 +387,18 @@ mg.Cell = class {
 								a: this,
 								b: c
 							})
-							this[i] = {
+							new mg.Gate(input.tick).spread(this[i] = {
 								c: c,
 								w: this.level.wires[p.s] = this.level.wires[p.s] || p
-							}
+							})
 							c.action('update', input)
 						} else if (this[i]) {
 							var l = this[i]
 							delete this.level.wires[l.w.s]
 							this[i] = null
+							if (l.c.wire) {
+								new mg.Gate(input.tick).spread(l)
+							}
 						}
 					}
 				} else {
@@ -354,16 +413,58 @@ mg.Cell = class {
 		}
 	}
 }
+mg.Gate = class {
+	constructor(tick) {
+		this.tick = tick
+		this.portals = []
+		this.pads = []
+	}
+	action(token, input) {
+		switch (token) {
+			case 'spread':
+				if (!input || input.w.gate == this || (input.w.gate && input.w.gate.tick == this.tick)) {
+					return
+				}
+				input.c.gate = input.w.gate = this
+				if (input.c.portal) {
+					this.portals.push(input.c)
+				} else if (input.c.pad) {
+					this.pads.push(input.c)
+				}
+				for (var i in mg.directions) {
+					this.action('spread', input.c[i])
+				}
+			case 'update':
+
+		}
+	}
+	spread(p) {
+
+	}
+}
 mg.Cell.get = function (p) {
 	return pt.floor(pt.factor(pt.sub(p, mg.shift), mg.cellSize))
 }
 mg.Player = class {
-	constructor() {}
+	constructor(level, input) {
+		level.players.push(this)
+		this.level = level
+		this.startCell = level.get('cell', input)
+	}
+	get() {
+
+	}
+	action(token, input) {
+		switch (token) {
+			case 'moveto':
+
+			case 'movefrom':
+			default:
+
+		}
+	}
 }
-mg.Player = class {
-	constructor() {}
-}
-mg.Gate = class {
+mg.Key = class {
 	constructor() {}
 }
 try {

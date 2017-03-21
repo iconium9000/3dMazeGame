@@ -9,7 +9,7 @@ var io = require('socket.io')(serv, {})
 var fs = require('fs')
 var pt = require('./client/point.js')
 var mg = require('./client/game.js')
-var Emitter = require('./server/Emitter.js')
+var Emitter = require('./client/Emitter.js')
 app.get('/', function (req, res) {
 	res.sendFile(__dirname + '/client/index.html')
 })

@@ -3,6 +3,7 @@
 </canvas>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.2.6/jquery.js"></script>
 <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+<script src="client/Emitter.js"></script>
 <script src="client/gameWindow.js"></script>
 <script src="client/point.js"></script>
 <script src="client/game.js"></script>
@@ -24,6 +25,17 @@
 	socket.on('msg', function(msg) {
 		console.log(msg)
 	})
+
+	function assignDirection(i) {
+		var key = mg.directions[i].key
+		keyDownEmitter.on(key, function(e) {
+			level.action('move', i)
+		})
+	}
+
+	for (var i in mg.directions) {
+		assignDirection(i)
+	}
 
 	function tick() {
 		++tickCounter
@@ -51,6 +63,10 @@
 		for (var i in mg.modeKeys) {
 			var k = mg.modeKeys[i]
 			var m = mg.modes[k]
+			if (keyUps[m.key] && (mg.mode != mg.modeKeys[i])) {
+				mg.mode = mg.modeKeys[i]
+				console.log('mode set to ' + mg.mode)
+			}
 			m.draw(g, i)
 			if (k == mg.mode) {
 				g.beginPath()
@@ -66,7 +82,7 @@
 			g.rect(5 + mg.cellSize / 2, 5 + mg.cellSize * (1 / 2 + 2 * i), mg.cellSize, mg.cellSize)
 			g.stroke()
 
-			if (mouse.hasUp || mouse.isDown) {
+			if ((mouse.hasUp || mouse.isDown) && (mg.mode != mg.modeKeys[i])) {
 				mg.mode = mg.modeKeys[i]
 				console.log('mode set to ' + mg.mode)
 			}
@@ -104,7 +120,12 @@
 		g.fillText(`fps:${Math.floor(1e3/dt)}`, 5, 5 + 2 * nmodes * mg.cellSize + 10)
 
 		g.fillStyle = 'white'
-		pt.fillCircle(g, mouse)
+
+		pt.fillCircle(g, {
+			x: mouse.x - mg.cellSize / 2,
+			y: mouse.y - mg.cellSize / 2,
+			r: mouse.r
+		})
 
 		mouse.prev = pt.copy(mouse)
 		mouse.prev.isDown = mouse.isDown
