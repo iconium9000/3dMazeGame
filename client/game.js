@@ -367,7 +367,14 @@ mg.Cell = class {
 					case 'key':
 						break
 					case 'player':
-						console.log('action(player)')
+						if (input.state == !this.player) {
+							if (this.player) {
+								delete this.level.players[this.player.name]
+								this.player = null
+							} else {
+								new Player(this)
+							}
+						}
 						break
 				}
 			case 'update':
@@ -446,10 +453,14 @@ mg.Cell.get = function (p) {
 	return pt.floor(pt.factor(pt.sub(p, mg.shift), mg.cellSize))
 }
 mg.Player = class {
-	constructor(level, input) {
-		level.players.push(this)
-		this.level = level
-		this.startCell = level.get('cell', input)
+	constructor(cell) {
+		do {
+			this.name = Math.random()
+		} while (cell.level.players[this.name])
+		cell.level.players[this.name] = this
+		this.level = cell.level
+		this.cell = cell
+		cell.player = this
 	}
 	get() {
 
