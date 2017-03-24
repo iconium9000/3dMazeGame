@@ -1,90 +1,114 @@
 console.log('gameWindow.js: init')
-var socket = io()
-var canvas = document.getElementById('canvas')
-var g = canvas.getContext('2d')
-var keyDown = []
-var keyUps = []
-var eventQueue = []
+var gameWindow = {
+	socket: io(),
+	keys: {
+		isDown: [],
+		hasDown: [],
+		hasUp: [],
+		update: function (e) {
+			hasDown = []
+			hasup = []
+		}
+	},
+	events: {
+		queue: [],
+		ticks: 0,
+		now: null,
+		dt: null,
+		last: null,
+		update: function (e) {
+			e.now = (new Date()).getTime()
+			e.dt = e.now - e.last
+			e.last = e.now
+			for (var i in e.queue) {
+				e.queue[i]()
+			}
+			++e.ticks
+			e.queue = []
+		}
+	},
+	display: {
+		canvas: document.getElementById('canvas'),
+		width: 0,
+		height: 0,
+		update: function (e) {
+			e.width = e.canvas.width = window.innerWidth - 40
+			e.heigth = e.canvas.height = window.innerHeight - 40
+		}
+	},
+	mouse: {
+		x: 0,
+		y: 0,
+		z: 0,
+		prev: {
+			x: 0,
+			y: 0,
+			z: 0,
+			isDown: false
+		},
+		isDown: false,
+		hasDown: false,
+		hasDragged: false,
+		hasUp: false,
+		update: function (e) {
+			e.hasDown = e.hasDragged = e.hasUp = false
+			e.prev = pt.copy(e)
+			e.prev.isDown = e.isDown
+		}
+	},
+	tick: function (e, f) {
+		e.display.g = e.display.canvas.getContext('2d')
 
-var keyDownEmitter = new Emitter()
+		tick()
 
-document.onkeydown = function (e) {
-	e = e || window.event;
-	keyDownEmitter.emit(e.key, e)
-}
+		function tick() {
+			e.display.update(e.display)
 
+			f(e)
 
-function update() {
-	mouse.hasUp = false
-	mouse.hasDown = false
-	keyUps = []
-	setTime()
-	getSize()
-	for (var i in eventQueue) {
-		eventQueue[i]()
+			e.mouse.update(e.mouse)
+			e.keys.update(e.keys)
+			e.events.update(e.events)
+			reqFrame(tick)
+		}
+
 	}
-	if (eventQueue.length != 0) {
-		eventQueue = []
+}
+
+//
+var reqFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame ||
+	window.mozRequestAnimationFrame || window.oRequestAnimationFrame ||
+	window.msRequestAnimationFrame || function (callback) {
+		window.setTimeout(callback, 30)
 	}
-}
-var now, dt, last
-var w, h, u
-var mouse = {
-	x: 0,
-	y: 0,
-	z: 0,
-	r: 5,
-	isDown: false,
-	hasDragged: false,
-	hasDown: false,
-	hasUp: false
-}
-
-function setTime() {
-	now = (new Date()).getTime()
-	dt = now - last
-	last = now
-}
-
-function getSize() {
-	w = canvas.width = window.innerWidth - 15
-	h = canvas.height = window.innerHeight - 20
-	u = w > h ? h : w
-}
-// --------------------------------------------
-// ReqFrame
-// --------------------------------------------
-var reqFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function (callback) {
-	window.setTimeout(callback, 30)
-}
 // --------------------------------------------
 // Mouse controls
 // --------------------------------------------
 $(canvas).css('cursor', 'none')
 
 function setMouse(e) {
-	mouse.x = e.clientX
-	mouse.y = e.clientY
+	gameWindow.mouse.x = e.clientX - 7
+	gameWindow.mouse.y = e.clientY - 7
 }
 $(document).mousemove(function (e) {
-	eventQueue.push(function () {
+	gameWindow.events.queue.push(function () {
 		setMouse(e)
-		mouse.hasDragged = mouse.isDown
+		gameWindow.mouse.hasDragged = gameWindow.mouse.isDown
 	})
 })
 $(document).mousedown(function (e) {
-	eventQueue.push(function () {
+	gameWindow.events.queue.push(function () {
 		setMouse(e)
-		mouse.hasDragged = false
-		mouse.isDown = true
-		mouse.hasDown = true
+		gameWindow.mouse.hasDragged = false
+		gameWindow.mouse.isDown = true
+		gameWindow.mouse.hasDown = true
 	})
 })
 $(document).mouseup(function (e) {
-	eventQueue.push(function () {
+	gameWindow.events.queue.push(function () {
 		setMouse(e)
-		mouse.isDown = false
-		mouse.hasUp = true
+		gameWindow.mouse.isDown = false
+		gameWindow.mouse.hasUp = true
 	})
 })
 // --------------------------------------------
@@ -94,14 +118,21 @@ function etochar(e) {
 	return String.fromCharCode(e.which | 0x20)
 }
 $(document).keypress(function (e) {
-	eventQueue.push(function () {
-		keyDown[etochar(e)] = true
+	gameWindow.events.queue.push(function () {
+		var c = etochar(e)
+		gameWindow.keys.isDown[c] = true
+		gameWindow.keys.hasDown[c] = true
 	})
 })
 $(document).keyup(function (e) {
-	eventQueue.push(function () {
+	gameWindow.events.queue.push(function () {
 		var c = etochar(e)
-		keyDown[c] = false
-		keyUps[c] = true
+		gameWindow.keys.isDown[c] = false
+		gameWindow.keys.hasUp[c] = true
 	})
 })
+document.onkeydown = function (e) {
+	gameWindow.events.queue.push(function () {
+		gameWindow.keys.hasDown[e.key] = true
+	})
+}

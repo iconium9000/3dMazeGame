@@ -10,55 +10,140 @@ try {
 	}
 }
 
-
+// -----------------------------------------------------------------------------
+// MazeGame
+// -----------------------------------------------------------------------------
 var mg = {
-	cellSize: 40,
-	cellWidth: 35,
+	offset: 5,
+	cellSize: 30,
+	cellWidth: 25,
 	shift: pt.zero(),
 	states: {
+		'space': {},
+		'wire': {},
+		'wall': {},
+		'door': {},
+		'pad': {},
+		'portal': {}
+	},
+	mode: 'pan',
+	modes: {
+		'pan': {
+			str: 'pan',
+			key: 'e'
+		},
 		'space': {
+			str: 'spc'
 			key: 'x'
 		},
 		'wire': {
+			str: 'wir'
 			key: 'v',
 		},
 		'wall': {
+			str: 'wll'
 			key: 'w',
 		},
 		'door': {
+			str: 'dor'
 			key: 'd',
 		},
 		'pad': {
+			str: 'pad'
 			key: 'a',
 		},
 		'portal': {
+			str: 'ptl'
 			key: 'z',
+		},
+		'player': {
+			str: 'plr',
+			key: 'c'
+		},
+		'key': {
+			str: 'key',
+			key: 'f'
 		}
 	},
 	cells: [],
 	portals: []
 }
+mg.modeKeys = Object.keys(mg.modes)
 // -----------------------------------------------------------------------------
 // Observe
 // -----------------------------------------------------------------------------
 mg.observe = function (token, input) {
 	switch (token) {
-		case 'draw': // ------------------------------------------------------
-			// draw spaces
+		case 'draw': // ------------------------------------------------------------
+			var g = input.display.g
+			var w = input.display.width
+			var h = input.display.height
+			var cs = mg.cellSize
+			var cw = mg.cellWidth
 
-			// draw walls
+			function shift(p) {
+				return pt.sum(mg.shift, pt.scale(p, cs))
+			}
 
-			// draw doors
+			var c = shift(pt.zero())
+			c.r = 10
+			g.fillStyle = 'white'
+			pt.fillCircle(g, c)
 
-			// draw wire stubs or pads
+			// draw spaces ---------------------------------------
 
-			// draw portals
+			// draw walls ----------------------------------------
 
-			// draw wires
+			// draw doors ----------------------------------------
 
-			// draw players
+			// draw wire stubs or pads ---------------------------
 
-			// draw keys
+			// draw portals --------------------------------------
+
+			// draw wires ----------------------------------------
+
+			// draw players --------------------------------------
+
+			// draw keys -----------------------------------------
+
+			// draw mode rectangle -------------------------------
+			var off = mg.offset
+
+			g.lineWidth = 1
+			g.strokeStyle = 'white'
+			g.fillStyle = 'black'
+			g.beginPath()
+			g.rect(off, off, 2 * cs, 2 * cs * mg.modeKeys.length)
+			g.fill()
+			g.beginPath()
+			g.rect(off, off, 2 * cs, 2 * cs * mg.modeKeys.length)
+			g.stroke()
+
+			g.textAlign = 'center'
+			g.fillStyle = 'white'
+
+			for (var i in mg.modeKeys) {
+				var m = mg.modeKeys[i]
+				var str = mg.modes[m].str
+				g.fillText(str, off + cs, off + 2 * cs * i + cs + 1)
+				if (m == mg.mode) {
+					g.beginPath()
+					g.rect(off + cs - cw / 2, off + cs - cw / 2 + 2 * cs * i, cw, cw)
+					g.stroke()
+				}
+			}
+
+			// draw mouse ----------------------------------------
+			g.fillStyle = 'white'
+
+			input.mouse.r = 10
+			pt.fillCircle(g, input.mouse)
+
+			if (input.mouse.inMode) {
+				g.beginPath()
+				g.rect(off + cs - cw / 2, off + cs - cw / 2 + 2 * cs * input.mouse.i, cw, cw)
+				g.stroke()
+			}
 
 			break
 
@@ -71,6 +156,7 @@ mg.observe = function (token, input) {
 			//		get cell in cell array at string's index
 			// input: {token: 'cell', cell: <cell at string>}
 			// 		get cell in input
+			console.log(`observe('get',token:${token})`)
 			switch (input.token) {
 				case 'mouse':
 					input.point = pt.floor(pt.factor(pt.sub(input.mouse, mg.shift), mg.cellSize))
@@ -95,6 +181,14 @@ mg.observe = function (token, input) {
 				default:
 					throw `observe(token: 'get', input.token: '${input.token}')`
 			}
+
+		case 'status': // ----------------------------------------------------------
+
+			return null
+
+		case 'state': // ----------------------------------------------------------
+			var cell = mg.observe('get', input)
+			return cell && cell[input.mode]
 	}
 }
 // -----------------------------------------------------------------------------
@@ -102,11 +196,45 @@ mg.observe = function (token, input) {
 // -----------------------------------------------------------------------------
 mg.action = function (token, input) {
 	switch (token) {
-		case 'pan':
-			if (input.isDown) {
-				pt.sume(mg.shift, pt.sub(input, input.prev))
+		case 'shift': //------------------------------------------------------------
+			var gw = input
+			var off = mg.offset
+			var ms = gw.mouse
+			var cs = mg.cellSize
+			var cw = mg.cellWidth
+
+			// key commands -----------------------------------
+
+			for (var i in mg.modes) {
+				if (gw.keys.hasUp[mg.modes[i].key]) {
+
+				}
+
 			}
+
+			// mouse commands ---------------------------------
+			ms.inMode = off < ms.x && ms.x < off + 2 * cs &&
+				off < ms.y && ms.y < off + 2 * cs * mg.modeKeys.length
+
+			if (ms.inMode) {
+				ms.i = Math.floor((ms.y - off) / 2 / cs)
+				if (ms.isDown) {
+					var md = mg.modeKeys[ms.i]
+					if (mg.mode != md) {
+						console.log(`mode set to '${mg.mode = md}'`)
+					}
+				}
+			} else if (ms.isDown) {
+				if (mg.mode == 'pan') {
+					pt.sume(mg.shift, pt.sub(ms, ms.prev))
+				} else {
+					var m = pt.sum(mg.shift, pt.scale(pt.floor(pt.factor(pt.sub(ms, mg.shift), cs))))
+
+				}
+			}
+
 			break
+
 		case 'get': // -------------------------------------------------------------
 			return input.cell = input.cell || mg.observe('get', input) || (mg.cells[input.string] = {
 				x: input.point.x,
@@ -183,7 +311,18 @@ mg.action = function (token, input) {
 			var cell = input.cell || mg.action('get', input)
 
 			var clear = true
-			for (var i in mg.)
+			for (var i in mg.states) {
+				if (cell[i]) {
+					clear = false
+					break
+				}
+			}
+
+			if (clear) {
+
+			} else {
+
+			}
 
 	}
 

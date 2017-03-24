@@ -11,124 +11,15 @@
 	console.log('index.html: init')
 
 	document.body.style.backgroundColor = 'black'
-	mouse.prev = pt.copy(mouse)
-	mouse.prev.isDown = false
-	var tickCounter = 0
 
-	var level = new mg.Level()
-	socket.on('handShake', function(cs) {
-		for (var i in cs) {
-			var c = cs[i]
-		}
-		tick()
+	gameWindow.socket.on('handShake', function(status) {
+		mg.action('status', status)
+		gameWindow.tick(gameWindow, function(gameWindow) {
+			mg.action('shift', gameWindow)
+			mg.observe('draw', gameWindow)
+		})
 	})
-	socket.on('msg', function(msg) {
+	gameWindow.socket.on('msg', function(msg) {
 		console.log(msg)
 	})
-
-	function assignDirection(i) {
-		var key = mg.directions[i].key
-		keyDownEmitter.on(key, function(e) {
-			level.action('move', i)
-		})
-	}
-
-	for (var i in mg.directions) {
-		assignDirection(i)
-	}
-
-	function tick() {
-		++tickCounter
-		update()
-
-		g.lineWidth = 1
-		g.strokeStyle = 'white'
-		g.fillStyle = 'white'
-		g.font = '10px Arial'
-		g.textAlign = 'center'
-
-		level.get('draw', g)
-
-		var nmodes = mg.modeKeys.length
-		g.fillStyle = 'black'
-		g.beginPath()
-		g.rect(5, 5, 2 * mg.cellSize, 2 * nmodes * mg.cellSize)
-		g.fill()
-
-		g.strokeStyle = 'white'
-		g.beginPath()
-		g.rect(5, 5, 2 * mg.cellSize, 2 * nmodes * mg.cellSize)
-		g.stroke()
-
-		for (var i in mg.modeKeys) {
-			var k = mg.modeKeys[i]
-			var m = mg.modes[k]
-			if (keyUps[m.key] && (mg.mode != mg.modeKeys[i])) {
-				mg.mode = mg.modeKeys[i]
-				console.log('mode set to ' + mg.mode)
-			}
-			m.draw(g, i)
-			if (k == mg.mode) {
-				g.beginPath()
-				g.rect(5 + mg.cellSize / 2, 5 + mg.cellSize * (1 / 2 + 2 * i), mg.cellSize, mg.cellSize)
-				g.stroke()
-			}
-		}
-
-		if (2 * mg.cellSize >= mouse.x && mouse.x >= 5 && 2 * nmodes * mg.cellSize > mouse.y && mouse.y >= 5) {
-			var i = Math.floor((mouse.y - 5) / (2 * mg.cellSize))
-			g.strokeStyle = 'white'
-			g.beginPath()
-			g.rect(5 + mg.cellSize / 2, 5 + mg.cellSize * (1 / 2 + 2 * i), mg.cellSize, mg.cellSize)
-			g.stroke()
-
-			if ((mouse.hasUp || mouse.isDown) && (mg.mode != mg.modeKeys[i])) {
-				mg.mode = mg.modeKeys[i]
-				console.log('mode set to ' + mg.mode)
-			}
-		} else {
-			if (mg.mode == 'pan') {
-				level.action('pan', mouse)
-			} else {
-				if (mouse.hasDown) {
-					mg.state = !level.get('state', {
-						input: mouse,
-						inputType: 'mouse',
-						state: mg.mode
-					})
-					console.log(`mg.state = ${mg.state}`)
-				}
-				level.action('state', {
-					input: mouse,
-					inputType: 'mouse',
-					mode: mg.mode,
-					state: mg.state,
-					tick: tickCounter
-				})
-			}
-			var m = pt.sum(mg.shift, pt.scale(mg.Cell.get(mouse), mg.cellSize))
-			g.strokeStyle = 'white'
-			g.beginPath()
-			g.rect(m.x - mg.cellSize / 2, m.y - mg.cellSize / 2, mg.cellSize, mg.cellSize)
-			g.stroke()
-		}
-
-		level.action('update')
-
-		g.textAlign = 'left'
-		g.fillStyle = 'white'
-		g.fillText(`fps:${Math.floor(1e3/dt)}`, 5, 5 + 2 * nmodes * mg.cellSize + 10)
-
-		g.fillStyle = 'white'
-
-		pt.fillCircle(g, {
-			x: mouse.x - mg.cellSize / 2,
-			y: mouse.y - mg.cellSize / 2,
-			r: mouse.r
-		})
-
-		mouse.prev = pt.copy(mouse)
-		mouse.prev.isDown = mouse.isDown
-		reqFrame(tick)
-	}
 </script>

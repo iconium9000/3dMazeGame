@@ -49,20 +49,31 @@ process.openStdin().addListener("data", function (d) {
 // ----------------------------------------
 // Socket Setup
 // ----------------------------------------
-var level = new mg.Level()
 console.log("Server Active")
 var sockets = []
 socketEmiter = new Emitter()
+
+function printsockets() {
+	var s = ''
+	for (var i in sockets) {
+		s += `${sockets[i].id}, `
+	}
+	console.log(`[${s}]`)
+}
+
 io.sockets.on('connection', function (socket) {
 	do {
 		socket.id = Math.random()
 	} while (sockets[socket.id] != null)
 	sockets[socket.id] = socket
 	console.log('socket connection ' + socket.id)
-	socket.emit('handShake', level.cs)
+	printsockets()
+
+	socket.emit('handShake', mg.observe('status'))
 	socket.on('disconnect', function () {
 		console.log('disconnect socket ' + socket.id)
 		delete sockets[socket.id]
+		printsockets()
 	})
 	socket.on('msg', function (msg) {
 		console.log(msg)
