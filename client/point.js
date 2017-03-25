@@ -1,42 +1,42 @@
 console.log("point.js: init")
 var pt = {
-	zero: function () {
+	zero: function() {
 		return {
 			x: 0,
 			y: 0,
 			z: 0
 		}
 	},
-	rand: function () {
+	rand: function() {
 		return {
 			x: Math.random(),
 			y: Math.random(),
 			z: Math.random()
 		}
 	},
-	angle: function (a) {
+	angle: function(a) {
 		return {
 			x: Math.cos(a),
 			y: Math.sin(a),
 			z: 0
 		}
 	},
-	tan: function (p) {
+	tan: function(p) {
 		return (p.x > 0 ? 0 : Math.PI) + Math.atan(p.y / p.x)
 	},
-	sqr: function (p) {
+	sqr: function(p) {
 		return p.x * p.x + p.y * p.y + p.z * p.z
 	},
-	length: function (p) {
+	length: function(p) {
 		return Math.sqrt(p.x * p.x + p.y * p.y + p.z * p.z)
 	},
-	dist: function (a, b) {
+	dist: function(a, b) {
 		var x = a.x - b.x
 		var y = a.y - b.y
 		var z = a.z - b.z
 		return Math.sqrt(x * x + y * y + z * z)
 	},
-	unit: function (p) {
+	unit: function(p) {
 		var l = Math.sqrt(p.x * p.x + p.y * p.y + p.z * p.z)
 		return {
 			x: p.x / l,
@@ -44,118 +44,118 @@ var pt = {
 			z: p.z / l
 		}
 	},
-	copy: function (a) {
+	copy: function(a) {
 		return {
 			x: a.x,
 			y: a.y,
 			z: a.z
 		}
 	},
-	set: function (p, c) {
+	set: function(p, c) {
 		p.x = c.x
 		p.y = c.y
 		p.z = c.z
 		return p
 	},
-	sum: function (a, b) {
+	sum: function(a, b) {
 		return {
 			x: a.x + b.x,
 			y: a.y + b.y,
 			z: a.z + b.z
 		}
 	},
-	sume: function (p, ps) {
+	sume: function(p, ps) {
 		p.x += ps.x
 		p.y += ps.y
 		p.z += ps.z
 		return p
 	},
-	sub: function (a, b) {
+	sub: function(a, b) {
 		return {
 			x: a.x - b.x,
 			y: a.y - b.y,
 			z: a.z - b.z
 		}
 	},
-	sube: function (p, ps) {
+	sube: function(p, ps) {
 		p.x -= ps.x
 		p.y -= ps.y
 		p.z -= ps.z
 		return p
 	},
-	dot: function (a, b) {
+	dot: function(a, b) {
 		return a.x * b.x + a.y * b.y + a.z * b.z
 	},
-	cross: function (a, b) {
+	cross: function(a, b) {
 		return {
 			x: a.y * b.z - a.z * b.y,
 			y: a.z * b.x - a.x * b.z,
 			z: a.x * b.y - a.y * b.x
 		}
 	},
-	scale: function (p, s) {
+	scale: function(p, s) {
 		return {
 			x: p.x * s,
 			y: p.y * s,
 			z: p.z * s
 		}
 	},
-	factor: function (p, f) {
+	factor: function(p, f) {
 		return {
 			x: p.x / f,
 			y: p.y / f,
 			z: p.z / f
 		}
 	},
-	mod: function (p, f) {
+	mod: function(p, f) {
 		return {
 			x: p.x % f,
 			y: p.y % f,
 			z: p.z % f
 		}
 	},
-	floor: function (p) {
+	math: function(f, p) {
 		return {
-			x: Math.floor(p.x),
-			y: Math.floor(p.y),
-			z: Math.floor(p.z)
+			x: f(p.x),
+			y: f(p.y),
+			z: f(p.z)
 		}
 	},
-	inverse: function (p) {
+	inverse: function(p) {
 		return {
 			x: p.y,
 			y: -p.x,
 			z: p.z
 		}
 	},
-	drawLine: function (g, l) {
+	drawLine: function(g, l) {
 		g.beginPath()
 		g.moveTo(l.a.x, l.a.y)
 		g.lineTo(l.b.x, l.b.y)
 		g.stroke()
 	},
-	drawCircle: function (g, c) {
+	drawCircle: function(g, c) {
 		g.beginPath()
 		g.arc(c.x, c.y, c.r, c.r, 0, 2 * Math.PI)
 		g.stroke()
 	},
-	fillCircle: function (g, c) {
+	fillCircle: function(g, c) {
 		g.beginPath()
 		g.arc(c.x, c.y, c.r, c.r, 0, 2 * Math.PI)
 		g.fill()
 	},
-	drawRect: function (g, c) {
+	drawRect: function(g, c) {
 		g.beginPath()
 		g.rect(c.x - c.r, c.y - c.r, 2 * c.r, 2 * c.r)
 		g.stroke()
 	},
-	fillRect: function (g, c) {
+	fillRect: function(g, c) {
 		g.beginPath()
 		g.rect(c.x - c.r, c.y - c.r, 2 * c.r, 2 * c.r)
 		g.fill()
 	}
 }
-pt.draw = function (g, c) {
+pt.draw = function(g, c) {
 	g.lineWidth = 7
 	g.fillStyle = c.c
 	pt.fillCircle(g, c)
@@ -168,7 +168,7 @@ pt.draw = function (g, c) {
 		})
 	}
 }
-pt.drawProjLine = function (g, l, ax) {
+pt.drawProjLine = function(g, l, ax) {
 	var a = l.a
 	var b = l.b
 	if (a.p2 && b.p2) {
@@ -203,7 +203,7 @@ p = {
 }
 
 */
-pt.planeBump = function (c, p) {
+pt.planeBump = function(c, p) {
 	var u = pt.unit(p.n)
 	var d = pt.dot(u, c) - pt.dot(u, p)
 	var dif = c.r - Math.abs(d)
@@ -214,7 +214,7 @@ pt.planeBump = function (c, p) {
 		pt.set(c.v, pt.sum(c.v, pt.scale(u, -2 * pt.dot(u, c.v))))
 	}
 }
-pt.bump = function (a, b) {
+pt.bump = function(a, b) {
 	var d = pt.dist(a, b)
 	if (a.r + b.r < d) {
 		return false
@@ -255,7 +255,7 @@ l = {
 }
 
 */
-pt.proj = function (p, ax) {
+pt.proj = function(p, ax) {
 	var t = pt.sub(p, ax.p3)
 	var z = pt.dot(ax.z.p3, t)
 	if (z < ax.d) {
@@ -273,7 +273,7 @@ pt.proj = function (p, ax) {
 // fcs: {x,y,z} -> optional point to look at
 // spd: rotationSpeed * dt -> camera Rotation speed
 // --------------------------------------------
-pt.camAngle = function (ax, pl, cam, fcs, spd) {
+pt.camAngle = function(ax, pl, cam, fcs, spd) {
 	if (fcs) {
 		var dif = pt.sub(fcs, pl)
 		ax.ay = pt.tan({
@@ -312,7 +312,7 @@ pt.camAngle = function (ax, pl, cam, fcs, spd) {
 	}
 	ax.y = pt.cross(ax.z, ax.x)
 }
-pt.midPoint = function (l3, ax) {
+pt.midPoint = function(l3, ax) {
 	var pa = pt.sub(l3.a, ax.p3)
 	var pb = pt.sub(l3.b, ax.p3)
 	var a = {
@@ -369,7 +369,7 @@ k = {
 			rotate at rate k.rs
 }
 */
-pt.move = function (c, k) {
+pt.move = function(c, k) {
 	if (k.fs) {
 		c.a = pt.tan(pt.sub(k.fs, c))
 	} else if (k.rs) {

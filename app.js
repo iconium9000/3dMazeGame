@@ -10,7 +10,7 @@ var fs = require('fs')
 var pt = require('./client/point.js')
 var mg = require('./client/game.js')
 var Emitter = require('./client/Emitter.js')
-app.get('/', function (req, res) {
+app.get('/', function(req, res) {
 	res.sendFile(__dirname + '/client/index.html')
 })
 app.use('/client', express.static(__dirname + '/client'))
@@ -25,7 +25,7 @@ console.log(readMe)
 // ----------------------------------------
 // Console Setup
 // ----------------------------------------
-process.openStdin().addListener("data", function (d) {
+process.openStdin().addListener("data", function(d) {
 	var string = d.toString().trim()
 	var split = string.split(' ')
 	switch (split[0]) {
@@ -35,13 +35,13 @@ process.openStdin().addListener("data", function (d) {
 				msg += split[i] + ' '
 			}
 			console.log(msg)
-			socketEmiter.emit('action', function (s) {
+			socketEmitter.emit('action', function(s) {
 				s.emit('msg', msg)
 			})
 			break
 		case 'clear':
 			level.clear()
-			socketEmiter.emit('action', function (s) {
+			socketEmitter.emit('action', function(s) {
 				s.emit('clear')
 			})
 	}
@@ -51,7 +51,11 @@ process.openStdin().addListener("data", function (d) {
 // ----------------------------------------
 console.log("Server Active")
 var sockets = []
-socketEmiter = new Emitter()
+socketEmitter = new Emitter()
+
+mg.server = function() {
+
+}
 
 function printsockets() {
 	var s = ''
@@ -61,26 +65,44 @@ function printsockets() {
 	console.log(`[${s}]`)
 }
 
-io.sockets.on('connection', function (socket) {
+io.sockets.on('connection', function(socket) {
+
 	do {
 		socket.id = Math.random()
 	} while (sockets[socket.id] != null)
+
 	sockets[socket.id] = socket
+
 	console.log('socket connection ' + socket.id)
+
 	printsockets()
 
-	socket.emit('handShake', mg.observe('status'))
-	socket.on('disconnect', function () {
+	socket.on('disconnect', function() {
 		console.log('disconnect socket ' + socket.id)
 		delete sockets[socket.id]
 		printsockets()
 	})
-	socket.on('msg', function (msg) {
+
+	socket.on('msg', function(msg) {
 		console.log(msg)
 	})
-	socketEmiter.on('action', function (action) {
+
+	socketEmitter.on('action', function(action) {
 		action(socket)
 	})
+
+	socket.on('status', function(status) {
+		mg.action('status', status)
+
+		for (var i in sockets) {
+			var s = sockets[i]
+			if (s.id != status.id) {
+				s.emit('status', status)
+			}
+		}
+	})
+
+	socket.emit('handShake', socket.id)
 })
 // ----------------------------------------
 // Tick
