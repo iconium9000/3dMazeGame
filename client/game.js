@@ -253,24 +253,23 @@ mg.observe = function(token, input) {
 
 		case 'status': // ----------------------------------------------------------
 			var cell = mg.observe('get', input)
-			if (cell) {
-				var status = new Object
-				status.id = input.id
-				status.string = cell.string
 
-				for (var i in mg.modes) {
+			var status = {
+				id: input.id,
+				string: cell.string
+			}
+
+			if (cell) {
+				for (var i in mg.states) {
 					if (cell[i]) {
 						status[i] = true
 					}
 				}
-
-				return status
-			} else {
-				return null
 			}
 
+			return status
 
-		case 'state': // ----------------------------------------------------------
+		case 'state': // -----------------------------------------------------------
 			var cell = mg.observe('get', input)
 			return cell && cell[input.mode]
 	}
@@ -286,7 +285,7 @@ mg.action = function(token, input) {
 			//		input.token = 'mouse' || 'point' || 'string' || 'cell'
 			//	input.time = gameWindow.event.now
 
-			return input.cell = input.cell || mg.observe('get', input) || (mg.cells[input.string] = {
+			return input.cell = mg.observe('get', input) || (mg.cells[input.string] = {
 				x: input.point.x,
 				y: input.point.y,
 				z: 0,
@@ -462,6 +461,12 @@ mg.action = function(token, input) {
 			break
 
 		case 'status': //-----------------------------------------------------------
+
+			//	input.id: socket.id
+			//	input.string: <string>
+			//	input[<state>]: true
+			//	....
+
 			input.token = 'string'
 			input.cell = null
 			var cell = mg.action('get', input)
@@ -473,7 +478,6 @@ mg.action = function(token, input) {
 			mg.action('update', input)
 
 			break
-
 	}
 
 }

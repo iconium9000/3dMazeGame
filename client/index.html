@@ -12,8 +12,17 @@
 
 	document.body.style.backgroundColor = 'black'
 
-	gameWindow.socket.on('handShake', function(id) {
+	var msg
+	var emit
+
+	gameWindow.socket.on('handShake', function(id, status) {
+		gameWindow.socket.id = id
+
 		console.log(`id: ${id}`)
+
+		status.forEach(function(s) {
+			mg.action('status', s)
+		})
 
 		gameWindow.socket.on('status', function(status) {
 			mg.action('status', status)
@@ -39,6 +48,11 @@
 			mg.action('shift', gameWindow)
 			mg.observe('draw', gameWindow)
 		}
+
+		msg = function(msg) {
+			gameWindow.socket.emit('msg', msg)
+		}
+		emit = gameWindow.socket.emit
 
 		gameWindow.tick(gameWindow, init, tick)
 	})

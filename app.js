@@ -53,10 +53,6 @@ console.log("Server Active")
 var sockets = []
 socketEmitter = new Emitter()
 
-mg.server = function() {
-
-}
-
 function printsockets() {
 	var s = ''
 	for (var i in sockets) {
@@ -84,7 +80,11 @@ io.sockets.on('connection', function(socket) {
 	})
 
 	socket.on('msg', function(msg) {
-		console.log(msg)
+		var s = `${socket.id}: '${msg}'`
+		console.log(s)
+		for (var i in sockets) {
+			sockets[i].emit('msg', `${socket.id}: '${msg}'`)
+		}
 	})
 
 	socketEmitter.on('action', function(action) {
@@ -102,19 +102,16 @@ io.sockets.on('connection', function(socket) {
 		}
 	})
 
-	socket.emit('handShake', socket.id)
+	var status = []
+
+	for (var i in mg.cells) {
+		status.push(mg.observe('status', {
+			id: 'server',
+			token: 'cell',
+			cell: mg.cells[i]
+		}))
+	}
+
+	socket.emit('handShake', socket.id, status)
+
 })
-// ----------------------------------------
-// Tick
-// ----------------------------------------
-// var dt = 20
-// var state = {
-//
-// }
-//
-// setInterval( function() {
-// 	for (var i in sockets) {
-// 		var s = sockets[i]
-// 		s.emit('tick',state)
-// 	}
-// }, dt)
