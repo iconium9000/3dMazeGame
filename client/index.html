@@ -15,13 +15,19 @@
 	var msg
 	var emit
 
+	gameWindow.socket.on('destroy', function() {
+		console.log('Server in Limbo')
+		gameWindow.socket.destroy()
+	})
+
 	gameWindow.socket.on('handShake', function(id, status) {
 		gameWindow.socket.id = id
 
 		console.log(`id: ${id}`)
 
-		status.forEach(function(s) {
-			mg.action('status', s)
+		mg.action('status', {
+			token: 'all',
+			status: status
 		})
 
 		gameWindow.socket.on('status', function(status) {
@@ -32,11 +38,22 @@
 			console.log(msg)
 		})
 
+		gameWindow.socket.on('clear', function() {
+			console.log('server: clear level!')
+			mg.action('clear')
+		})
+
+		gameWindow.socket.on('kill', function(msg) {
+			gameWindow.socket.emit('msg', 'Signing off!')
+			gameWindow.events.active = false
+			console.log('Signing off...')
+			gameWindow.socket.destroy()
+		})
+
 		mg.status = function(cell) {
 			gameWindow.socket.emit('status', mg.observe('status', {
 				token: 'cell',
-				cell: cell,
-				id: id
+				cell: cell
 			}))
 		}
 

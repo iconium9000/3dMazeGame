@@ -12,10 +12,11 @@ var gameWindow = {
 	},
 	events: {
 		queue: [],
-		ticks: 0,
+		tick: 0,
 		now: null,
 		dt: null,
 		last: null,
+		active: false,
 		update: function(e) {
 			e.now = (new Date()).getTime()
 			e.dt = e.now - e.last
@@ -23,7 +24,7 @@ var gameWindow = {
 			for (var i in e.queue) {
 				e.queue[i]()
 			}
-			++e.ticks
+			++e.tick
 			e.queue = []
 		}
 	},
@@ -60,6 +61,9 @@ var gameWindow = {
 	tick: function(e, i, f) {
 		e.display.g = e.display.canvas.getContext('2d')
 		e.mouse.mouse = e.mouse
+		e.events.active = true
+
+		$(canvas).css('cursor', 'none')
 
 		i(e)
 		tick()
@@ -72,7 +76,12 @@ var gameWindow = {
 			e.mouse.update(e.mouse)
 			e.keys.update(e.keys)
 			e.events.update(e.events)
-			reqFrame(tick)
+
+			if (e.events.active) {
+				reqFrame(tick)
+			} else {
+				$(canvas).css('cursor', 'default')
+			}
 		}
 
 	}
@@ -86,7 +95,6 @@ var reqFrame = window.requestAnimationFrame || window.webkitRequestAnimationFram
 // --------------------------------------------
 // Mouse controls
 // --------------------------------------------
-$(canvas).css('cursor', 'none')
 
 function setMouse(e) {
 	gameWindow.mouse.x = e.clientX - 7

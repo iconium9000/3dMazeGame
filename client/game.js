@@ -16,19 +16,32 @@ function forEach(a, f) {
 	}
 }
 
+function swap(v, a, b) {
+	var t = v[a]
+	v[a] = v[b]
+	v[b] = t
+}
+
 // -----------------------------------------------------------------------------
 // MazeGame
 // -----------------------------------------------------------------------------
 var mg = {
 	offset: 5,
 	cellSize: 30,
-	cellWidth: 25,
+	cellWidth: 20,
 	cells: [],
 	portals: [],
 	wires: [],
 	events: [],
 	status: null,
 	shift: pt.zero(),
+	clear: function(e) {
+		e.cells = []
+		e.portals = []
+		e.wires = []
+		e.events = []
+		e.shift = pt.zero()
+	},
 	drawRect: function(g, s, r, c, f) {
 		var gdot = `${f}Style`
 		var ptdot = `${f == 'stroke' ? 'draw' : f}Rect`
@@ -122,7 +135,7 @@ mg.setStates = function(g) {
 	mg.states.space.draw = mg.drawRect(g, 'space', cw / 2, '#404040', 'fill')
 	mg.states.wire.draw = mg.drawRect(g, 'wire', cw / 6, '#408000', 'fill')
 	mg.states.wall.draw = mg.drawRect(g, 'wall', cs / 2, '#808080', 'fill')
-	mg.states.door.draw = mg.drawRect(g, 'door', cw / 2, '#208000', 'fill')
+	mg.states.door.draw = mg.drawRect(g, 'door', cs / 2, '#208000', 'fill')
 	mg.states.pad.draw = mg.drawRect(g, 'pad', cw / 3, '#208000', 'fill')
 	mg.states.portal.draw = mg.drawRect(g, 'portal', cs / 2, '#800080', 'stroke')
 }
@@ -215,15 +228,15 @@ mg.observe = function(token, input) {
 
 			break
 
-		case 'get': // -------------------------------------------------------------
+		case 'cell': // -------------------------------------------------------------
 			//	input: {token:'mouse', mouse:{x,y,z}}
-			// 		get cell relative to shift
+			// 		cell cell relative to shift
 			//	input: {token: 'point', point:{x,y,z}}
-			//		get cell in cell array at point
+			//		cell cell in cell array at point
 			//	input: {token: 'string', string:'<x-cord>,<y-cord>'}
-			//		get cell in cell array at string's index
+			//		cell cell in cell array at string's index
 			//	input: {token: 'cell', cell: <cell at string>}
-			// 		get cell in input
+			// 		cell cell in input
 			switch (input.token) {
 				//	input.mouse || input.point || input.string || input.cell
 				//	input.token = 'mouse' || 'point' || 'string' || 'cell'
@@ -248,29 +261,69 @@ mg.observe = function(token, input) {
 					return input.cell
 
 				default:
-					throw `observe(token: 'get', input.token: '${input.token}')`
+					throw `observe(token: 'cell', input.token: '${input.token}')`
+			}
+
+		case 'wire': // ------------------------------------------------------------
+
+			var t = {
+				token: input.token
+			}
+
+			t[input.token] = input.a
+			input.a = mg.observe('cell', t)
+
+			t[input.token] = input.b
+			input.b = mg.observe('cell', t)
+
+			if (input.a && input.b) {
+				if (input.a.string < input.b.string) {
+					swap(input, 'a', 'b')
+				}
+
+				input.string = `[${input.a.string}],[${input.b.string}]`
+
+				return mg.wires[input.string]
+			} else {
+				return null
 			}
 
 		case 'status': // ----------------------------------------------------------
-			var cell = mg.observe('get', input)
+			if (input.token == 'all') {
+				var status = {}
 
-			var status = {
-				id: input.id,
-				string: cell.string
-			}
+				for (var i in mg.cells) {
+					var s = mg.observe('status', {
+						token: 'cell',
+						cell: mg.cells[i]
+					})
+					status[s.string] = s.status
+				}
 
-			if (cell) {
-				for (var i in mg.states) {
-					if (cell[i]) {
-						status[i] = true
+				return status
+
+			} else {
+				// var cell = mg.observe('cell', input)
+				var cell = input.cell
+
+				var status = {
+					string: cell.string,
+					status: []
+				}
+
+				if (cell) {
+					for (var i in mg.states) {
+						if (cell[i]) {
+							status.status.push(i)
+						}
 					}
 				}
+
+				return status
 			}
 
-			return status
-
 		case 'state': // -----------------------------------------------------------
-			var cell = mg.observe('get', input)
+			var cell = mg.observe('cell', input)
 			return cell && cell[input.mode]
 	}
 }
@@ -279,29 +332,51 @@ mg.observe = function(token, input) {
 // -----------------------------------------------------------------------------
 mg.action = function(token, input) {
 	switch (token) {
-		case 'get': // -------------------------------------------------------------
-			//	input <- mg.observe.get.input
+		case 'cell': // -------------------------------------------------------------
+			//	input <- mg.observe.cell.input
 			//		input.mouse || input.point || input.string || input.cell
 			//		input.token = 'mouse' || 'point' || 'string' || 'cell'
 			//	input.time = gameWindow.event.now
 
-			return input.cell = mg.observe('get', input) || (mg.cells[input.string] = {
+			return input.cell = mg.observe('cell', input) || (mg.cells[input.string] = {
 				x: input.point.x,
 				y: input.point.y,
 				z: 0,
 				string: input.string
 			})
 
+		case 'wire': // ------------------------------------------------------------
+			var wire = mg.observe('wire', input)
+
+			if (input.string) {
+				input.clear = input.a.clear || input.b.clear || !input.a.wire || !input.b.wire
+
+				if (input.clear) {
+					delete mg.wires[input.string]
+					return null
+				} else {
+					return mg.wires[input.string] = wire || {
+						string: input.string,
+						a: input.a,
+						b: input.b
+					}
+				}
+			} else {
+				return null
+			}
+
+			break
+
 		case 'state': // -----------------------------------------------------------
-			//	input <- mg.observe.get.input
+			//	input <- mg.observe.cell.input
 			//		input.mouse || input.point || input.string || input.cell
 			//	input.token = 'mouse' || 'point' || 'string' || 'cell'
 			//	input <- mg.action.update.input
-			//		input <- mg.observe.get.input
+			//		input <- mg.observe.cell.input
 			//		input.tick = gameWindow.tick
 			//	input.state
 			//	input.mode
-			var cell = mg.action('get', input)
+			var cell = mg.action('cell', input)
 			switch (input.mode) {
 				case 'space': //--------------------
 
@@ -372,32 +447,57 @@ mg.action = function(token, input) {
 			}
 
 			mg.status(cell)
+			input.token = 'cell'
 
 		case 'update': // ----------------------------------------------------------
-			//	input <- mg.observe.get.input
+
+
+			//	input <- mg.observe.cell.input
 			//		input.mouse || input.point || input.string || input.cell
 			//		input.token = 'mouse' || 'point' || 'string' || 'cell'
 			//	input.tick = gameWindow.events.tick
 
-			var cell = mg.action('get', input)
-			if (cell.tick == input.tick) {
-				break
-			}
-			cell.tick = input.tick
+			var cell = mg.action('cell', input)
 
-			var clear = true
+			cell.clear = true
 			for (var i in mg.states) {
 				if (cell[i]) {
-					clear = false
+					cell.clear = false
 					break
 				}
 			}
 
-			for (var i in mg.directions) {}
-
-			if (clear) {
+			if (cell.clear) {
 				delete mg.cells[cell.string]
-			} else {
+			}
+
+			for (var i in mg.directions) {
+				var c = mg.observe('cell', {
+					token: 'point',
+					point: pt.sum(cell, mg.directions[i])
+				})
+
+				if (c && !input.update) {
+					mg.action('update', {
+						token: 'cell',
+						cell: c,
+						update: true
+					})
+					mg.action('wire', {
+						token: 'cell',
+						a: cell,
+						b: c
+					})
+				}
+
+				cell[i] = {
+					cell: c,
+					wire: mg.observe('wire', {
+						token: 'cell',
+						a: cell,
+						b: c
+					})
+				}
 
 			}
 
@@ -432,7 +532,7 @@ mg.action = function(token, input) {
 
 			// if in the mode selector rectangle (mode rect)
 			if (ms.inMode) {
-				// get mode index and save it to gw.mouse
+				// cell mode index and save it to gw.mouse
 				ms.i = Math.floor((ms.y - off) / 2 / cs)
 
 				// if the mouse is down in the mode rect
@@ -445,7 +545,7 @@ mg.action = function(token, input) {
 				}
 			} else {
 				// for observe('draw') : to draw mouse acurately
-				mg.observe('get', ms)
+				mg.observe('cell', ms)
 
 				// if mouse is down, either pan or set the state of the selected cell
 				if (ms.isDown) {
@@ -453,7 +553,12 @@ mg.action = function(token, input) {
 						pt.sume(mg.shift, pt.sub(ms, ms.prev))
 					} else {
 						ms.mode = mg.mode
-						mg.action('state', ms)
+						mg.action('state', {
+							token: 'mouse',
+							mouse: ms,
+							mode: mg.mode,
+							state: ms.state
+						})
 					}
 				}
 			}
@@ -462,20 +567,43 @@ mg.action = function(token, input) {
 
 		case 'status': //-----------------------------------------------------------
 
-			//	input.id: socket.id
-			//	input.string: <string>
-			//	input[<state>]: true
-			//	....
+			if (input.token == 'all') {
+				for (var i in input.status) {
+					mg.action('status', {
+						string: i,
+						status: input.status[i]
+					})
+				}
+			} else {
+				//	input.id: socket.id
+				//	input.string: <string>
+				//	input[<state>]: true
+				//	....
 
-			input.token = 'string'
-			input.cell = null
-			var cell = mg.action('get', input)
+				var cell = mg.action('cell', {
+					token: 'string',
+					string: input.string
+				})
 
-			for (var i in mg.states) {
-				cell[i] = input[i]
+				for (var i in mg.states) {
+					cell[i] = false
+				}
+
+				for (var i in input.status) {
+					cell[input.status[i]] = true
+				}
+
+				mg.action('update', {
+					token: 'cell',
+					cell: cell,
+					tick: input.tick
+				})
+
 			}
+			break
 
-			mg.action('update', input)
+		case 'clear': // -----------------------------------------------------------
+			mg.clear(mg)
 
 			break
 	}
