@@ -35,6 +35,34 @@ var mg = {
 	events: [],
 	status: null,
 	shift: pt.zero(),
+	Cell: class Cell {
+		constructor(input) {
+			this.x = input.point.x
+			this.y = input.point.y
+			this.z = input.point.z
+			this.string = input.string
+		}
+	},
+	Wire: class Wire {
+		constructor(input) {
+			this.a = input.a
+			this.b = input.b
+			this.string = input.string
+		}
+	},
+	Gate: class Gate {
+		constructor(input) {
+			this.portals = []
+			this.pads = []
+			this.open = true
+		}
+	},
+	Link: class Link {
+		constructor(input) {
+			this.cell = input.cell
+			this.wire = input.wire
+		}
+	},
 	clear: function(e) {
 		e.cells = []
 		e.portals = []
@@ -149,8 +177,8 @@ mg.observe = function(token, input) {
 			//	input <- gameWindow
 
 			var g = input.display.g
-			var w = input.display.width
-			var h = input.display.height
+			var width = input.display.width
+			var height = input.display.height
 			var ms = input.mouse
 			var cs = mg.cellSize
 			var cw = mg.cellWidth
@@ -177,6 +205,16 @@ mg.observe = function(token, input) {
 			forEach(mg.cells, mg.states.portal.draw)
 
 			// draw wires ----------------------------------------
+			for (var i in mg.wires) {
+				var wire = mg.wires[i]
+
+				g.strokeStyle = '#408000'
+				pt.drawLine(g, {
+					a: pt.sum(mg.shift, pt.scale(wire.a, mg.cellSize)),
+					b: pt.sum(mg.shift, pt.scale(wire.b, mg.cellSize))
+				})
+
+			}
 
 			// draw players --------------------------------------
 
@@ -208,6 +246,18 @@ mg.observe = function(token, input) {
 					g.stroke()
 				}
 			}
+
+			// draw level control rectangle ----------------------
+
+			g.lineWidth = 1
+			g.strokeStyle = 'white'
+			g.fillStyle = 'black'
+			g.beginPath()
+			g.rect(width - off, off, -2 * cs, 2 * cs)
+			g.fill()
+			g.beginPath()
+			g.rect(width - off, off, -2 * cs, 2 * cs)
+			g.stroke()
 
 			// draw mouse ----------------------------------------
 			g.fillStyle = 'white'
@@ -338,12 +388,7 @@ mg.action = function(token, input) {
 			//		input.token = 'mouse' || 'point' || 'string' || 'cell'
 			//	input.time = gameWindow.event.now
 
-			return input.cell = mg.observe('cell', input) || (mg.cells[input.string] = {
-				x: input.point.x,
-				y: input.point.y,
-				z: 0,
-				string: input.string
-			})
+			return input.cell = mg.observe('cell', input) || (mg.cells[input.string] = new mg.Cell(input))
 
 		case 'wire': // ------------------------------------------------------------
 			var wire = mg.observe('wire', input)
@@ -355,11 +400,7 @@ mg.action = function(token, input) {
 					delete mg.wires[input.string]
 					return null
 				} else {
-					return mg.wires[input.string] = wire || {
-						string: input.string,
-						a: input.a,
-						b: input.b
-					}
+					return mg.wires[input.string] = wire || new mg.Wire(input)
 				}
 			} else {
 				return null
@@ -451,7 +492,6 @@ mg.action = function(token, input) {
 
 		case 'update': // ----------------------------------------------------------
 
-
 			//	input <- mg.observe.cell.input
 			//		input.mouse || input.point || input.string || input.cell
 			//		input.token = 'mouse' || 'point' || 'string' || 'cell'
@@ -477,28 +517,74 @@ mg.action = function(token, input) {
 					point: pt.sum(cell, mg.directions[i])
 				})
 
-				if (c && !input.update) {
-					mg.action('update', {
-						token: 'cell',
-						cell: c,
-						update: true
-					})
-					mg.action('wire', {
-						token: 'cell',
-						a: cell,
-						b: c
-					})
+				if (c) {
+					var wire = null
+
+					if (!input.update) {
+						wire = mg.action('wire', {
+							token: 'cell',
+							a: cell,
+							b: c
+						})
+					}
+
+					if (!input.update || cell.clear) {
+						mg.action('update', {
+							token: 'cell',
+							cell: c,
+							update: true
+						})
+					}
+
+					if (cell.clear) {
+
+					} else {
+						cell[i] = new mg.Link({
+							cell: c,
+							wire: wire || mg.observe('wire', {
+								token: 'cell',
+								a: cell,
+								b: c
+							})
+						})
+					}
 				}
 
-				cell[i] = {
-					cell: c,
-					wire: mg.observe('wire', {
-						token: 'cell',
-						a: cell,
-						b: c
-					})
+
+			}
+
+			if (cell.clear) {
+				return
+			} else {
+				input.token = 'cell'
+			}
+
+		case 'gate': // ------------------------------------------------------------
+			var cell = mg.observe('cell', input)
+
+			//	if there is a cell, it is a wire,
+			//		and either the input.gate is null or cell.gate != input.gate
+			if (cell && cell.wire && (!input.gate || cell.gate != input.gate)) {
+				cell.gate = input.gate = input.gate || new mg.Gate()
+
+				if (cell.portal) {
+					input.gate.portals.push(cell)
+				}
+				if (cell.pad) {
+					input.gate.pads.push(cell)
 				}
 
+				for (var i in mg.directions) {
+					var c = cell[i]
+					if (c && c.cell && c.wire) {
+						c.wire.gate = input.gate
+						mg.action('gate', {
+							token: 'cell',
+							cell: cell[i].cell,
+							gate: input.gate
+						})
+					}
+				}
 			}
 
 			break
