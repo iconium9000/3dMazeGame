@@ -68,7 +68,7 @@ process.openStdin().addListener("data", function(d) {
 					sockets[i].emit('kill')
 				}
 
-				fs.writeFileSync('test.txt', JSON.stringify(mg.observe('status', {
+				fs.writeFileSync('data.txt', JSON.stringify(mg.observe('status', {
 					token: 'all',
 					id: 'server'
 				})))
@@ -78,7 +78,7 @@ process.openStdin().addListener("data", function(d) {
 				break
 			case 'save':
 				console.msg('Saving game...')
-				fs.writeFile('test.txt', JSON.stringify(mg.observe('status', {
+				fs.writeFile('data.txt', JSON.stringify(mg.observe('status', {
 					token: 'all',
 					id: 'server'
 				})))
@@ -90,7 +90,7 @@ process.openStdin().addListener("data", function(d) {
 setInterval(function() {
 	if (!limbo) {
 		console.msg('Autosaving game...')
-		fs.writeFile('test.txt', JSON.stringify(mg.observe('status', {
+		fs.writeFile('data.txt', JSON.stringify(mg.observe('status', {
 			token: 'all',
 			id: 'server'
 		})))
@@ -114,7 +114,7 @@ console.msg = function(m) {
 
 mg.action('status', {
 	token: 'all',
-	status: JSON.parse(fs.readFileSync('test.txt'))
+	status: JSON.parse(fs.readFileSync('data.txt'))
 })
 
 function printsockets() {
