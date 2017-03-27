@@ -699,8 +699,6 @@ mg.action = function(token, input) {
 // Console Setup
 // ----------------------------------------
 
-
-
 try {
 	module.exports = mg
 } catch (e) {}
