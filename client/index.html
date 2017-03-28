@@ -28,13 +28,13 @@
 
 		console.log(`id: ${id}`)
 
-		mg.action('status', {
+		mg.action.status({
 			token: 'all',
 			status: status
 		})
 
 		gameWindow.socket.on('status', function(status) {
-			mg.action('status', status)
+			mg.action.status(status)
 		})
 
 		gameWindow.socket.on('msg', function(msg) {
@@ -43,7 +43,7 @@
 
 		gameWindow.socket.on('clear', function(id) {
 			console.log(`${id || 'server'}: clear level!`)
-			mg.action('clear')
+			mg.action.clear()
 		})
 
 		gameWindow.socket.on('kill', function(id) {
@@ -54,30 +54,35 @@
 		})
 
 		mg.status = function(cell) {
-			gameWindow.socket.emit('status', mg.observe('status', {
+			gameWindow.socket.emit('status', mg.observe.status({
 				token: 'cell',
 				cell: cell
 			}))
 		}
 
-		var init = function(gameWindow) {
-			mg.setStates(gameWindow.display.g)
-		}
+		var init = mg.setStates
 
 		var tick = function(gameWindow) {
-			mg.action('shift', gameWindow)
-			mg.observe('draw', gameWindow)
+			mg.action.shift(gameWindow)
+			mg.observe.draw(gameWindow)
 		}
 
 		print = function() {
 			gameWindow.socket.emit('print', msg)
 		}
+
 		msg = function(msg) {
 			gameWindow.socket.emit('msg', msg)
 		}
+
+		save = function() {
+			gameWindow.socket.emit('save')
+		}
+
 		clear = function() {
 			gameWindow.socket.emit('clear')
 		}
+
 		kill = function() {
 			gameWindow.socket.emit('kill')
 		}

@@ -77,7 +77,7 @@ function action(token, msg, id) {
 			for (var i in sockets) {
 				sockets[i].emit('clear', id)
 			}
-			mg.action('clear')
+			mg.action.clear()
 			break
 
 		case 'kill':
@@ -96,7 +96,7 @@ function action(token, msg, id) {
 
 			action('msg', msg || 'Saving game...', id)
 
-			fs.writeFile('data.txt', JSON.stringify(mg.observe('status', {
+			fs.writeFile('data.txt', JSON.stringify(mg.observe.status( {
 				token: 'all',
 				id: 'server'
 			})))
@@ -121,7 +121,7 @@ console.msg = function(m) {
 	}
 }
 
-mg.action('status', {
+mg.action.status( {
 	token: 'all',
 	status: JSON.parse(fs.readFileSync('data.txt'))
 })
@@ -143,7 +143,6 @@ io.sockets.on('connection', function(socket) {
 
 	console.log(`socket connection: ${socket.id}`)
 
-
 	socket.on('disconnect', function() {
 		console.log(`disconnect socket: ${socket.name} (${socket.id})`)
 		delete sockets[socket.id]
@@ -163,6 +162,10 @@ io.sockets.on('connection', function(socket) {
 		action('kill')
 	})
 
+	socket.on('save', function() {
+		action('save')
+	})
+
 	socket.on('clear', function() {
 		action('clear')
 	})
@@ -172,7 +175,7 @@ io.sockets.on('connection', function(socket) {
 	})
 
 	socket.on('status', function(status) {
-		mg.action('status', status)
+		mg.action.status( status)
 
 		for (var i in sockets) {
 			var s = sockets[i]
@@ -182,7 +185,7 @@ io.sockets.on('connection', function(socket) {
 		}
 	})
 
-	socket.emit('handShake', socket.id, mg.observe('status', {
+	socket.emit('handShake', socket.id, mg.observe.status( {
 		token: 'all',
 		id: 'server'
 	}))
