@@ -24,78 +24,87 @@ serv.listen(port)
 process.openStdin().addListener("data", function(d) {
 	var string = d.toString().trim()
 	var split = string.split(' ')
+
+	var token = split[0]
+
+	var msg = ''
+
+	for (var i = 1; i < split.length; ++i) {
+		msg += split[i] + ' '
+	}
+
 	if (limbo) {
 		if (split[0] == 'y') {
 			console.log('killing server...')
 			process.exit(0)
-		} else {
+		} else if (split[0] == 'n') {
 			limbo = false
+			console.log('Server reactivated')
 		}
-
 	} else {
-
-		switch (split[0]) {
-			case "say":
-
-				var msg = "server: "
-
-				for (var i = 1; i < split.length; ++i) {
-					msg += split[i] + ' '
-				}
-
-				console.log(msg)
-
-				for (var i in sockets) {
-					sockets[i].emit('msg', msg)
-				}
-
-				break
-
-			case 'clear':
-
-				console.log('clearing level...')
-				for (var i in sockets) {
-					sockets[i].emit('clear')
-				}
-				mg.action('clear')
-				break
-
-			case 'kill':
-
-				console.msg('Saving game...')
-
-				for (var i in sockets) {
-					sockets[i].emit('kill')
-				}
-
-				fs.writeFileSync('data.txt', JSON.stringify(mg.observe('status', {
-					token: 'all',
-					id: 'server'
-				})))
-
-				console.log('Ready to kill? (y/n)')
-				limbo = true
-				break
-			case 'save':
-				console.msg('Saving game...')
-				fs.writeFile('data.txt', JSON.stringify(mg.observe('status', {
-					token: 'all',
-					id: 'server'
-				})))
-				break
-		}
+		action(token, msg)
 	}
 })
 
 setInterval(function() {
 	if (!limbo) {
-		console.msg('Autosaving game...')
-		fs.writeFile('data.txt', JSON.stringify(mg.observe('status', {
-			token: 'all',
-			id: 'server'
-		})))
+		action('save', 'Autosaving game...')
 	}
 }, 1e5)
+
+function action(token, msg, id) {
+	switch (token) {
+		case 'print':
+			msg = ''
+			for (var i in sockets) {
+				var s = sockets[i]
+				msg += `${s.name || s.id}, `
+			}
+			msg = `[${msg}]`
+		case 'msg':
+		case 'say':
+			msg = `${id || 'server'}: ${msg}`
+			console.log(msg)
+			for (var i in sockets) {
+				sockets[i].emit('msg', msg)
+			}
+
+			break
+
+		case 'clear':
+
+			console.log('clearing level...')
+			for (var i in sockets) {
+				sockets[i].emit('clear', id)
+			}
+			mg.action('clear')
+			break
+
+		case 'kill':
+
+			action('save')
+
+			for (var i in sockets) {
+				sockets[i].emit('kill', id)
+			}
+
+			console.log('Ready to kill? (y/n)')
+			limbo = true
+			break
+
+		case 'save':
+
+			action('msg', msg || 'Saving game...', id)
+
+			fs.writeFile('data.txt', JSON.stringify(mg.observe('status', {
+				token: 'all',
+				id: 'server'
+			})))
+
+			break
+
+	}
+}
 
 // ----------------------------------------
 // Socket Setup
@@ -117,13 +126,7 @@ mg.action('status', {
 	status: JSON.parse(fs.readFileSync('data.txt'))
 })
 
-function printsockets() {
-	var s = ''
-	for (var i in sockets) {
-		s += `${sockets[i].id}, `
-	}
-	console.log(`[${s}]`)
-}
+
 
 io.sockets.on('connection', function(socket) {
 
@@ -138,22 +141,34 @@ io.sockets.on('connection', function(socket) {
 
 	sockets[socket.id] = socket
 
-	console.log('socket connection ' + socket.id)
+	console.log(`socket connection: ${socket.id}`)
 
-	printsockets()
 
 	socket.on('disconnect', function() {
-		console.log('disconnect socket ' + socket.id)
+		console.log(`disconnect socket: ${socket.name} (${socket.id})`)
 		delete sockets[socket.id]
-		printsockets()
+		action('print')
+	})
+
+	socket.on('name', function(name) {
+		action('msg', `${socket.id} set to '${socket.name = name}'`)
+		action('print')
 	})
 
 	socket.on('msg', function(msg) {
-		var s = `${socket.id}: '${msg}'`
-		console.log(s)
-		for (var i in sockets) {
-			sockets[i].emit('msg', `${socket.id}: '${msg}'`)
-		}
+		action('msg', msg, socket.name || socket.name)
+	})
+
+	socket.on('kill', function() {
+		action('kill')
+	})
+
+	socket.on('clear', function() {
+		action('clear')
+	})
+
+	socket.on('print', function() {
+		action('print')
 	})
 
 	socket.on('status', function(status) {

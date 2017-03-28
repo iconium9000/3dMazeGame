@@ -20,8 +20,11 @@
 		gameWindow.socket.destroy()
 	})
 
+	gameWindow.socket.name = prompt('What is your name?', 'Johnny Appleseed')
+
 	gameWindow.socket.on('handShake', function(id, status) {
 		gameWindow.socket.id = id
+		gameWindow.socket.emit('name', gameWindow.socket.name)
 
 		console.log(`id: ${id}`)
 
@@ -38,15 +41,15 @@
 			console.log(msg)
 		})
 
-		gameWindow.socket.on('clear', function() {
-			console.log('server: clear level!')
+		gameWindow.socket.on('clear', function(id) {
+			console.log(`${id || 'server'}: clear level!`)
 			mg.action('clear')
 		})
 
-		gameWindow.socket.on('kill', function(msg) {
+		gameWindow.socket.on('kill', function(id) {
 			gameWindow.socket.emit('msg', 'Signing off!')
 			gameWindow.events.active = false
-			console.log('Signing off...')
+			console.log(`${id || 'server'}: kicked you`)
 			gameWindow.socket.destroy()
 		})
 
@@ -66,10 +69,18 @@
 			mg.observe('draw', gameWindow)
 		}
 
+		print = function() {
+			gameWindow.socket.emit('print', msg)
+		}
 		msg = function(msg) {
 			gameWindow.socket.emit('msg', msg)
 		}
-		emit = gameWindow.socket.emit
+		clear = function() {
+			gameWindow.socket.emit('clear')
+		}
+		kill = function() {
+			gameWindow.socket.emit('kill')
+		}
 
 		gameWindow.tick(gameWindow, init, tick)
 	})
