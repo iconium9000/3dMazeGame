@@ -22,8 +22,9 @@
 
 	gameWindow.socket.name = prompt('What is your name?', 'Johnny Appleseed')
 
-	gameWindow.socket.on('handShake', function(id, status) {
+	gameWindow.socket.on('handShake', function(id, opped, status) {
 		gameWindow.socket.id = id
+		gameWindow.socket.opped = opped
 		gameWindow.socket.emit('name', gameWindow.socket.name)
 
 		console.log(`id: ${id}`)
@@ -31,6 +32,13 @@
 		mg.action.status({
 			token: 'all',
 			status: status
+		})
+
+		gameWindow.socket.on('op', function() {
+			gameWindow.socket.opped = true
+		})
+		gameWindow.socket.on('deop', function() {
+			gameWindow.socket.opped = false
 		})
 
 		gameWindow.socket.on('status', function(status) {
@@ -42,22 +50,35 @@
 		})
 
 		gameWindow.socket.on('clear', function(id) {
-			console.log(`${id || 'server'}: clear level!`)
+			console.log(`${id}: clear level!`)
 			mg.action.clear()
 		})
 
 		gameWindow.socket.on('kill', function(id) {
 			gameWindow.socket.emit('msg', 'Signing off!')
 			gameWindow.events.active = false
-			console.log(`${id || 'server'}: kicked you`)
+			console.log(`${id}: kicked you`)
 			gameWindow.socket.destroy()
 		})
 
-		mg.status = function(cell) {
+		gameWindow.socket.on('game', function(id, game) {
+			console.log(`${id}: game mode set to '${game}'`)
+			mg.game = game
+		})
+
+		mg.status = function(cell, token) {
 			gameWindow.socket.emit('status', mg.observe.status({
 				token: 'cell',
-				cell: cell
-			}))
+				cell: cell,
+			}), token)
+		}
+
+		mg.reset = function() {
+			gameWindow.socket.emit('reset')
+		}
+
+		mg.game = function() {
+			gameWindow.socket.emit('game')
 		}
 
 		var init = mg.setStates
@@ -65,6 +86,14 @@
 		var tick = function(gameWindow) {
 			mg.action.shift(gameWindow)
 			mg.observe.draw(gameWindow)
+		}
+
+		reset = function() {
+			gameWindow.socket.emit('reset')
+		}
+
+		game = function(msg) {
+			gameWindow.socket.emit('game', msg)
 		}
 
 		print = function() {

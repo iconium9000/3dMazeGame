@@ -384,6 +384,62 @@ pt.move = function(c, k) {
 	pt.set(c.v, pt.sub(c.v, pt.scale(c.v, k.dt * k.dg)))
 	pt.set(c, pt.sum(c, pt.scale(c.v, k.dt)))
 }
+
+pt.solveConstants = {
+	operators: [['(', ')', '[', ']', '{', '}'], ['^'], ['*', '/'], ['+', '-', '++', '--'], ['>', '<', '>=', '<=', '==', '!='], ['?', ':'], ['=', '^=', '*=', '/=', '+=', '-='], [',', ' ']],
+	opChars: {},
+	types: {'s':[],'xy':'2d var','xyz': '3d var'}
+}
+
+var sc = pt.solveConstants
+for (var i in sc.operators) {
+	var subI = sc.operators[i]
+	for (var j in subI) {
+		var subJ = subI[j]
+		for (var k in subJ) {
+			var c = subJ[k]
+			sc.opChars[c] = c
+		}
+	}
+}
+
+
+pt.solve = function() {
+	var args = new Object
+	var sc = pt.solveConstants
+	for (var i in arguments) {
+		var token = arguments[i]
+		var split = token.split(':')
+		
+		if (split.length == 2 && sc.types[split[1]]) {
+
+			var n = split[0]
+			var t = split[1]	
+
+			if (t && n && isNaN(parseFloat(n))) {
+				for (var j in n) {
+					if (sc.opChars[n[j]]) {
+						t = null
+						break
+					}
+				}
+				if (t && !args[n]) {
+					args[n] = t
+					continue
+				}
+			}
+		}
+	}
+	
+	return args
+}
+
+
+pt.testVect = function() {
+	console.log(pt.solve('a:xy','b:xy','return a + b'))
+}
+
+
 try {
 	module.exports = pt
 } catch (e) {}
