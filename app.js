@@ -51,7 +51,7 @@ process.openStdin().addListener("data", function(d) {
 })
 
 setInterval(function() {
-	if (!limbo) {
+	if (!limbo && !mg.game) {
 		action('save', 'server', 'Autosaving game...')
 	}
 }, 1e5)
@@ -114,10 +114,8 @@ function action(token, id, msg) {
 
 		case 'game':
 
-			if (mg.game) {
-				mg.backup = null
-				action('reset', 'server')
-			}
+			mg.backup = null
+			action('reset', 'server')
 
 			mg.game = (msg == 'true') || (msg == 'false') || !mg.game
 
@@ -128,6 +126,7 @@ function action(token, id, msg) {
 			}
 
 			action(mg.game ? 'deop' : 'op', 'server')
+			action(mg.game ? 'whitelist' : 'blacklist', 'server')
 
 			break
 
@@ -255,7 +254,7 @@ io.sockets.on('connection', function(socket) {
 	console.log(`socket connection: ${socket.id}`)
 
 	socket.on('disconnect', function() {
-		console.log(`disconnect socket: ${socket.name} (${socket.id})`)
+		console.log(`disconnect socket: '${socket.name}' (${socket.id})`)
 		delete sockets[socket.id]
 		action('print', 'server')
 	})

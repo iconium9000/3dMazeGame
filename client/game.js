@@ -680,12 +680,35 @@ mg.action = {
 	'move': //	------------------------------------------------------------
 		function(input) {
 			var cell = mg.observe.cell(input)
+
+			var locked = mg.locked
 			//	if there is a cell, it is a wire,
 			//		and either the input.gate is null or cell.gate != input.gate
 			if (cell && (cell.space || cell.door) && cell.player && !cell.wall && (!cell.door ||
 					cell.gate.open)) {
 				var c = cell[input.direction] ? cell[input.direction].cell : null
 				if (c && (c.space || c.door) && !c.player && !c.wall && (!c.door || c.gate.open)) {
+
+					// if (c.portal && c.gate.open) {
+					// 	var p
+					// 	for (var i in mg.all.portal) {
+					// 		p = mg.all.portal[i]
+					// 		if (i == cell.string || i == c.string) {
+					// 			p = null
+					// 		} else {
+					// 			break
+					// 		}
+					// 	}
+					// 	if (p && !p.player) {
+					// 		if (!p.pad) {
+					// 			if (cell.pad)
+					// 		}
+					//
+					//
+					// 		return
+					// 	}
+					// }
+
 					var key = c.key
 					if (c.key) {
 						mg.locked = true
