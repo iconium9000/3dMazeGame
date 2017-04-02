@@ -35,6 +35,7 @@ var mg = {
 	events: [],
 	status: null,
 	shift: pt.zero(),
+
 	Cell: class Cell {
 		constructor(input) {
 			this.x = input.point.x
@@ -677,6 +678,16 @@ mg.action = {
 			}
 
 		},
+
+	'swap': //	------------------------------------------------------------
+
+		function(cellA, cellB, state) {
+			cellA[state] = false
+			cellB[state] = true
+			delete mg.all[state][cellA.string]
+			mg.all[state][cellB.string] = cellB
+		},
+
 	'move': //	------------------------------------------------------------
 		function(input) {
 			var cell = mg.observe.cell(input)
@@ -687,27 +698,51 @@ mg.action = {
 			if (cell && (cell.space || cell.door) && cell.player && !cell.wall && (!cell.door ||
 					cell.gate.open)) {
 				var c = cell[input.direction] ? cell[input.direction].cell : null
-				if (c && (c.space || c.door) && !c.player && !c.wall && (!c.door || c.gate.open)) {
+				if (c && (c.space || c.door) && !c.wall && (!c.door || c.gate.open)) {
 
-					// if (c.portal && c.gate.open) {
-					// 	var p
-					// 	for (var i in mg.all.portal) {
-					// 		p = mg.all.portal[i]
-					// 		if (i == cell.string || i == c.string) {
-					// 			p = null
-					// 		} else {
-					// 			break
-					// 		}
-					// 	}
-					// 	if (p && !p.player) {
-					// 		if (!p.pad) {
-					// 			if (cell.pad)
-					// 		}
-					//
-					//
-					// 		return
-					// 	}
-					// }
+					var p = null
+					if (c.portal && c.gate.open) {
+						for (var i in mg.all.portal) {
+							p = mg.all.portal[i]
+							if (i == cell.string || i == c.string || !p.gate.open) {
+								p = null
+							} else {
+								break
+							}
+						}
+					}
+
+					if (p) {
+						var players = cell.player + c.player + p.player
+						var keys = cell.key + c.key + p.key
+
+						cell.player = players > 2
+						c.player = players > 1
+						p.player = players > 0
+
+						cell.key = keys > 2
+						c.key = keys > 1
+						p.key = keys > 0
+
+						mg.status(cell, 'move')
+						mg.status(c, 'move')
+						mg.status(p, 'move')
+
+						return p
+					}
+
+					if (c.player) {
+						var keys = cell.key + c.key
+
+						cell.key = keys > 1
+						c.key = keys > 0
+
+						mg.status(cell, 'move')
+						mg.status(c, 'move')
+
+						return c
+					}
+
 
 					var key = c.key
 					if (c.key) {
@@ -716,10 +751,7 @@ mg.action = {
 
 					if (!cell.pad || !c.door || c.wire.gate != cell.wire.gate) {
 						if (mg.locked && cell.key && !c.key) {
-							cell.key = false
-							c.key = true
-							delete mg.all.key[cell.string]
-							mg.all.key[c.string] = c
+							mg.action.swap(cell, c, 'key')
 						}
 					} else if (!cell.key) {
 						mg.locked = locked
@@ -730,11 +762,7 @@ mg.action = {
 						mg.locked = key
 					}
 
-					cell.player = false
-					c.player = true
-					delete mg.all.player[cell.string]
-					mg.all.player[c.string] = c
-
+					mg.action.swap(cell, c, 'player')
 					mg.status(cell, 'move')
 					mg.status(c, 'move')
 
