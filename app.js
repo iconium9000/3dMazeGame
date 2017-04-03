@@ -56,8 +56,8 @@ setInterval(function() {
 	}
 }, 1e5)
 
-function action(token, id, msg) {
-	if (id != 'server' && token != 'msg' && (!id || !sockets[id] || sockets[id].opped == false ||
+function action(token, id, msg, key) {
+	if (id != 'server' && token != 'msg' && key != 'move' && (!id || !sockets[id] || sockets[id].opped == false ||
 			(sockets[id].opped == null && listType == 'whitelist'))) {
 		return null
 	}
@@ -276,9 +276,9 @@ io.sockets.on('connection', function(socket) {
 		action('kill', socket.id)
 	})
 
-	socket.on('reset', function() {
-		action('reset', 'server') // anybody can reset
-	})
+// 	socket.on('reset', function() {
+// 		action('reset', 'server') // anybody can reset
+// 	})
 
 	socket.on('save', function() {
 		action('save', socket.id)
@@ -293,7 +293,7 @@ io.sockets.on('connection', function(socket) {
 	})
 
 	socket.on('status', function(status, token) {
-		action('status', token == 'move' ? 'server' : socket.id, status)
+		action('status', socket.id, status, token)
 	})
 
 	socket.emit('handShake', socket.id, listType == 'blacklist', mg.observe.status({
