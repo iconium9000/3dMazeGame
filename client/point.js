@@ -21,6 +21,11 @@ var pt = {
 			z: 0
 		}
 	},
+	apply: function(obj, p) {
+		obj.x = p.x
+		obj.y = p.y
+		obj.z = p.z
+	},
 	tan: function(p) {
 		return (p.x > 0 ? 0 : Math.PI) + Math.atan(p.y / p.x)
 	},
@@ -386,9 +391,22 @@ pt.move = function(c, k) {
 }
 
 pt.solveConstants = {
-	operators: [['(', ')', '[', ']', '{', '}'], ['^'], ['*', '/'], ['+', '-', '++', '--'], ['>', '<', '>=', '<=', '==', '!='], ['?', ':'], ['=', '^=', '*=', '/=', '+=', '-='], [',', ' ']],
+	operators: [
+		['(', ')', '[', ']', '{', '}'],
+		['^'],
+		['*', '/'],
+		['+', '-', '++', '--'],
+		['>', '<', '>=', '<=', '==', '!='],
+		['?', ':'],
+		['=', '^=', '*=', '/=', '+=', '-='],
+		[',', ' ']
+	],
 	opChars: {},
-	types: {'s':[],'xy':'2d var','xyz': '3d var'}
+	types: {
+		's': [],
+		'xy': '2d var',
+		'xyz': '3d var'
+	}
 }
 
 var sc = pt.solveConstants
@@ -410,11 +428,11 @@ pt.solve = function() {
 	for (var i in arguments) {
 		var token = arguments[i]
 		var split = token.split(':')
-		
+
 		if (split.length == 2 && sc.types[split[1]]) {
 
 			var n = split[0]
-			var t = split[1]	
+			var t = split[1]
 
 			if (t && n && isNaN(parseFloat(n))) {
 				for (var j in n) {
@@ -430,13 +448,13 @@ pt.solve = function() {
 			}
 		}
 	}
-	
+
 	return args
 }
 
 
 pt.testVect = function() {
-	console.log(pt.solve('a:xy','b:xy','return a + b'))
+	console.log(pt.solve('a:xy', 'b:xy', 'return a + b'))
 }
 
 

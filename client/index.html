@@ -12,111 +12,46 @@
 
 	document.body.style.backgroundColor = 'black'
 
-	var msg
-	var emit
+	var socket = io()
 
-	gameWindow.socket.on('destroy', function() {
-		console.log('Server in Limbo')
-		gameWindow.socket.destroy()
-	})
-
-	gameWindow.socket.name = prompt('What is your name?', 'Johnny Appleseed')
-
-	gameWindow.socket.on('handShake', function(id, opped, status) {
-		gameWindow.socket.id = id
-		gameWindow.socket.opped = opped
-		gameWindow.socket.emit('name', gameWindow.socket.name)
-
-		console.log(`id: ${id}`)
-
-		mg.action.status({
-			token: 'all',
-			status: status
-		})
-
-		gameWindow.socket.on('op', function() {
-			gameWindow.socket.opped = true
-		})
-		gameWindow.socket.on('deop', function() {
-			gameWindow.socket.opped = false
-		})
-
-		gameWindow.socket.on('status', function(status) {
-			// console.log('status')
-			mg.action.status(status)
-		})
-
-		gameWindow.socket.on('msg', function(msg) {
+	var action = {
+		msg: function(msg) {
+			socket.emit('msg', msg)
+		},
+		kill: function() {
+			socket.emit('kill')
+		},
+		status: function(cell) {
+			socket.emit('status', mg.status.observe(cell))
+		}
+	}
+	var rcv = {
+		handShake: function(data) {
+			socket.id = data.id
+			socket.name = data.name
+			console.log(`id:${socket.id}, name:${socket.name}`)
+			mg.status.action(data.status)
+		},
+		msg: function(msg) {
 			console.log(msg)
-		})
-
-		gameWindow.socket.on('clear', function(id) {
-			console.log(`${id}: clear level!`)
-			mg.action.clear()
-		})
-
-		gameWindow.socket.on('kill', function(id) {
-			gameWindow.socket.emit('msg', 'Signing off!')
-			gameWindow.events.active = false
-			console.log(`${id}: kicked you`)
-			gameWindow.socket.destroy()
-		})
-
-		gameWindow.socket.on('game', function(id, game) {
-			console.log(`${id}: game mode set to '${game}'`)
-			mg.game = game
-		})
-
-		mg.status = function(cell, token) {
-			gameWindow.socket.emit('status', mg.observe.status({
-				token: 'cell',
-				cell: cell,
-			}), token)
+		},
+		kill: function() {
+			console.log('leaving server...')
+			socket.destroy()
+		},
+		status: function(status) {
+			mg.status.action(status)
 		}
+	}
 
-		mg.reset = function() {
-			gameWindow.socket.emit('reset')
-		}
+	for (var i in rcv) {
+		socket.on(i, rcv[i])
+	}
+	for (var i in action) {
+		window[i] = action[i]
+	}
 
-		mg.game = function() {
-			gameWindow.socket.emit('game')
-		}
-
-		var init = mg.setStates
-
-		var tick = function(gameWindow) {
-			mg.action.shift(gameWindow)
-			mg.observe.draw(gameWindow)
-		}
-
-		reset = function() {
-			gameWindow.socket.emit('reset')
-		}
-
-		game = function(msg) {
-			gameWindow.socket.emit('game', msg)
-		}
-
-		print = function() {
-			gameWindow.socket.emit('print', msg)
-		}
-
-		msg = function(msg) {
-			gameWindow.socket.emit('msg', msg)
-		}
-
-		save = function() {
-			gameWindow.socket.emit('save')
-		}
-
-		clear = function() {
-			gameWindow.socket.emit('clear')
-		}
-
-		kill = function() {
-			gameWindow.socket.emit('kill')
-		}
-
-		gameWindow.tick(gameWindow, init, tick)
+	socket.emit('handShake', {
+		name: prompt('What is your name?', 'Johnny Appleseed')
 	})
 </script>

@@ -18,201 +18,130 @@ app.get('/', function(req, res) {
 app.use('/client', express.static(__dirname + '/client'))
 var port = 2000
 serv.listen(port)
+
+var sockets = {}
+
+// ----------------------------------------
+// Functions
+// ----------------------------------------
+
+function strsplit(string, char) {
+	var index = string.indexOf(char)
+	if (index < 0) {
+		return {
+			token: string,
+			msg: ''
+		}
+	} else {
+		return {
+			token: string.substr(0, index),
+			msg: string.substr(index + 1)
+		}
+	}
+}
+
+function strkey(array, element) {
+	var k = Object.keys(array)
+	var i = 0
+	var string = ''
+	while (i < k.length) {
+		string += array[k[i]][element]
+		if (i++ < k.length - 1) {
+			string += ', '
+		}
+	}
+	return `[${string}]`
+}
+
 // ----------------------------------------
 // Console Setup
 // ----------------------------------------
+
 process.openStdin().addListener("data", function(d) {
-	var string = d.toString().trim()
-
-	var token = ''
-	var msg = null
-	for (var i in string) {
-		var c = string[i]
-		if (msg != null) {
-			msg += c
-		} else if (c == ' ') {
-			msg = ''
-		} else {
-			token += c
-		}
+	var s = strsplit(d.toString().trim(), ' ')
+	if (action[s.token]) {
+		action[s.token]('server', s.msg)
 	}
 
-	if (limbo) {
-		if (token == 'y') {
-			console.log('killing server...')
-			process.exit(0)
-		} else if (token == 'n') {
-			limbo = false
-			console.log('Server reactivated')
-		}
-	} else {
-		action(token, 'server', msg)
-	}
 })
 
 setInterval(function() {
 	if (!limbo && !mg.game) {
-		action('save', 'server', 'Autosaving game...')
+		action.save('server', 'Autosaving game...')
 	}
 }, 1e5)
 
-function action(token, id, msg, key) {
-	if (id != 'server' && token != 'msg' && key != 'move' && (!id || !sockets[id] || sockets[id].opped == false ||
-			(sockets[id].opped == null && listType == 'whitelist'))) {
-		return null
+var observe = {
+	rand: function() {
+		var id = Math.random()
+		return sockets[id] ? observe.rand() : id
+	},
+	opped: function(id) {
+		return id == 'server' || socket[id].opped
+	},
+	name: function(id) {
+		return id == 'server' ? id : sockets[id].name
+	},
+	print: function(id) {
+		action.msg(id, strkey(sockets, 'name'))
 	}
-
-	id = sockets[id] ? sockets[id].name || id : id
-
-	switch (token) {
-		case 'reset':
-			console.log(`${id}: reset level`)
-
-			if (mg.backup) {
-				for (var i in mg.all.player) {
-					mg.all.player[i].player = false
-				}
-				mg.all.player = {}
-				for (var i in mg.backup.player) {
-					mg.all.player[i] = mg.backup.player[i]
-					mg.all.player[i].player = true
-				}
-				for (var i in mg.all.key) {
-					mg.all.key[i].key = false
-				}
-				mg.all.key = {}
-				for (var i in mg.backup.key) {
-					mg.all.key[i] = mg.backup.key[i]
-					mg.all.key[i].key = true
-				}
-
-				var status = {
-					token: 'all',
-					status: mg.observe.status({
-						token: 'all',
-						id: 'server'
-					})
-				}
-
-				for (var i in sockets) {
-					sockets[i].emit('status', status)
-				}
-
-			} else {
-				mg.backup = {
-					player: {},
-					key: {}
-				}
-				for (var i in mg.all.player) {
-					mg.backup.player[i] = mg.all.player[i]
-				}
-				for (var i in mg.all.key) {
-					mg.backup.key[i] = mg.all.key[i]
-				}
+}
+var action = {
+	lambda: function(id, f) {
+		for (var i in sockets) {
+			f(sockets[i])
+		}
+	},
+	emit: function(id, token, msg) {
+		for (var i in sockets) {
+			sockets[i].emit(token, msg)
+		}
+	},
+	emitnor: function(id, token, msg) {
+		for (var i in sockets) {
+			if (id != i) {
+				sockets[i].emit(token, msg)
 			}
-			break
-
-		case 'game':
-
-			mg.backup = null
-			action('reset', 'server')
-
-			mg.game = (msg == 'true') || (msg == 'false') || !mg.game
-
-			console.log(`${id}: game mode set to '${mg.game}'`)
-
-			for (var i in sockets) {
-				sockets[i].emit('game', id, mg.game)
-			}
-
-			action(mg.game ? 'deop' : 'op', 'server')
-			action(mg.game ? 'whitelist' : 'blacklist', 'server')
-
-			break
-
-		case 'whitelist':
-		case 'blacklist':
-			console.log(`mode set to '${token}'`)
-			listType = token
-			break
-
-		case 'op':
-		case 'deop':
-			for (var i in sockets) {
-				var s = sockets[i]
-				if (msg) {
-					if (s.name == msg) {
-						s.opped = token == 'op'
-						console.log(`opped: ${s.name}`)
-						s.emit(token)
-					}
-				} else if (s.opped != (token == 'op')) {
-					s.opped = token == 'op'
-					console.log(`${token}ed: ${s.name}`)
-					s.emit(token)
-				}
-
-			}
-			break
-
-		case 'print':
-			msg = ''
-			for (var i in sockets) {
-				var s = sockets[i]
-				msg += `${s.name || s.id}, `
-			}
-			msg = `[${msg}]`
-		case 'msg':
-		case 'say':
-			msg = `${id || 'server'}: ${msg}`
-			console.log(msg)
-			for (var i in sockets) {
-				sockets[i].emit('msg', msg)
-			}
-
-			break
-
-		case 'clear':
-
-			console.log('clearing level...')
-			for (var i in sockets) {
-				sockets[i].emit('clear', id)
-			}
-			mg.action.clear()
-			break
-
-		case 'kill':
-
-			action('save', 'server')
-
-			for (var i in sockets) {
-				sockets[i].emit('kill', id)
-				delete sockets[i]
-			}
-
-			console.log('Ready to kill? (y/n)')
-			limbo = true
-			break
-
-		case 'save':
-
-			action('msg', id, msg || 'Saving game...')
-
-			fs.writeFile('data.txt', JSON.stringify(mg.observe.status({
-				token: 'all',
-				id: 'server'
-			})))
-
-			break
-		case 'status':
-			mg.action.status(msg)
-
-			for (var i in sockets) {
-				var s = sockets[i]
-				if (id != s.id) {
-					s.emit('status', msg)
-				}
-			}
+		}
+	},
+	op: function(id) {
+		if (id != 'server' && sockets[id]) {
+			sockets[id].op = true
+		}
+	},
+	msg: function(id, msg) {
+		msg = `${observe.name(id)}: ${msg}`
+		console.log(msg)
+		action.emit(id, 'msg', msg)
+	},
+	save: function(id, msg) {
+		console.log(`${id}: ${msg || 'Saving game...'}`)
+		action.emit(id, 'save', msg || 'Saving game...')
+	},
+	kill: function(id) {
+		var id = id || 'server'
+		observe.print(id)
+		action.save(id)
+		action.emit(id, 'kill')
+	},
+	y: function() {
+		process.exit(0)
+	}
+}
+var rcv = {
+	msg: function(socket, msg) {
+		action.msg(socket.id, msg)
+	},
+	kill: function(socket) {
+		action.kill(socket.id)
+	},
+	status: function(socket, status) {
+		mg.status.action(status)
+		emitnor(socket.id, 'status', status)
+	},
+	disconnect: function(socket) {
+		delete sockets[socket.id]
+		observe.print('server')
 	}
 }
 
@@ -220,85 +149,20 @@ function action(token, id, msg, key) {
 // Socket Setup
 // ----------------------------------------
 console.log("Server Active")
-var listType = 'blacklist'
-var sockets = []
-socketEmitter = new Emitter()
-
-console.msg = function(m) {
-	m = `server: ${m}`
-	console.log(m)
-	for (var i in sockets) {
-		sockets[i].emit('msg', m)
-	}
-}
-
-mg.action.status({
-	token: 'all',
-	status: JSON.parse(fs.readFileSync('data.txt'))
-})
 
 io.sockets.on('connection', function(socket) {
+	socket.on('handShake', function(info) {
+		socket.name = info.name
+		info.id = socket.id = observe.rand()
+		sockets[info.id] = socket
+		observe.print('server')
+		info.status = mg.status.observe()
+		socket.emit('handShake', info)
 
-	if (limbo) {
-		socket.emit('destroy')
-		return
-	}
-
-	do {
-		socket.id = Math.random()
-	} while (sockets[socket.id] != null)
-
-	sockets[socket.id] = socket
-	socket.opped = listType == 'blacklist'
-
-	console.log(`socket connection: ${socket.id}`)
-
-	socket.on('disconnect', function() {
-		console.log(`disconnect socket: '${socket.name}' (${socket.id})`)
-		delete sockets[socket.id]
-		action('print', 'server')
+		for (var i in rcv) {
+			socket.on(i, function(msg) {
+				rcv[i](socket, msg)
+			})
+		}
 	})
-
-	socket.on('name', function(name) {
-		action('msg', 'server', `${socket.id} set to '${socket.name = name}'`)
-		action('print', 'server')
-	})
-
-	socket.on('game', function(msg) {
-		action('game', socket.id, msg)
-	})
-
-	socket.on('msg', function(msg) {
-		action('msg', socket.id, msg)
-	})
-
-	socket.on('kill', function() {
-		action('kill', socket.id)
-	})
-
-// 	socket.on('reset', function() {
-// 		action('reset', 'server') // anybody can reset
-// 	})
-
-	socket.on('save', function() {
-		action('save', socket.id)
-	})
-
-	socket.on('clear', function() {
-		action('clear', socket.id)
-	})
-
-	socket.on('print', function() {
-		action('print', socket.id)
-	})
-
-	socket.on('status', function(status, token) {
-		action('status', socket.id, status, token)
-	})
-
-	socket.emit('handShake', socket.id, listType == 'blacklist', mg.observe.status({
-		token: 'all',
-		id: 'server'
-	}))
-
 })
