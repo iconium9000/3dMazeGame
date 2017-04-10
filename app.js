@@ -120,6 +120,10 @@ var action = {
 		console.log(msg)
 		action.emit(id, 'msg', msg)
 	},
+	clear: function(id) {
+		action.msg(id, 'Clearing Level...')
+		mg.clear()
+	},
 	save: function(id, msg) {
 		console.log(`${id}: ${msg || 'Saving game...'}`)
 		action.emit(id, 'save', msg || 'Saving game...')
@@ -143,6 +147,7 @@ function actionRcv(token) {
 	}
 }
 var rcv = {
+	clear: actionRcv('clear'),
 	save: actionRcv('save'),
 	msg: actionRcv('msg'),
 	kill: actionRcv('kill'),

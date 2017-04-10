@@ -28,6 +28,9 @@
 			})
 		},
 		action: {
+			clear: function() {
+				socket.emit('save')
+			},
 			save: function() {
 				socket.emit('save')
 			},
