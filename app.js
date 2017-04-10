@@ -21,6 +21,11 @@ serv.listen(port)
 
 var sockets = {}
 
+mg.status.action({
+	all: true,
+	states: JSON.parse(fs.readFileSync('data.txt'))
+})
+
 // ----------------------------------------
 // Functions
 // ----------------------------------------
@@ -62,12 +67,13 @@ process.openStdin().addListener("data", function(d) {
 	if (action[s.token]) {
 		action[s.token]('server', s.msg)
 	}
-
 })
 
+var updated = true
 setInterval(function() {
-	if (!limbo && !mg.game) {
+	if (!updated && !limbo && !mg.game) {
 		action.save('server', 'Autosaving game...')
+		updated = true
 	}
 }, 1e5)
 
@@ -117,6 +123,8 @@ var action = {
 	save: function(id, msg) {
 		console.log(`${id}: ${msg || 'Saving game...'}`)
 		action.emit(id, 'save', msg || 'Saving game...')
+
+		fs.writeFile('data.txt', JSON.stringify(mg.status.observe().states))
 	},
 	kill: function(id) {
 		var id = id || 'server'
@@ -128,18 +136,22 @@ var action = {
 		process.exit(0)
 	}
 }
+
+function actionRcv(token) {
+	return function(socket, msg) {
+		action[token](socket.id, msg)
+	}
+}
 var rcv = {
-	msg: function(socket, msg) {
-		action.msg(socket.id, msg)
-	},
-	kill: function(socket) {
-		action.kill(socket.id)
-	},
+	save: actionRcv('save'),
+	msg: actionRcv('msg'),
+	kill: actionRcv('kill'),
 	status: function(socket, status) {
 		mg.status.action(status)
-		emitnor(socket.id, 'status', status)
+		action.emitnor(socket.id, 'status', status)
 	},
 	disconnect: function(socket) {
+		action.msg(socket.id, 'Disconnected from server')
 		delete sockets[socket.id]
 		observe.print('server')
 	}
@@ -155,14 +167,20 @@ io.sockets.on('connection', function(socket) {
 		socket.name = info.name
 		info.id = socket.id = observe.rand()
 		sockets[info.id] = socket
-		observe.print('server')
 		info.status = mg.status.observe()
 		socket.emit('handShake', info)
 
-		for (var i in rcv) {
+		function setRcv(i) {
 			socket.on(i, function(msg) {
 				rcv[i](socket, msg)
 			})
 		}
+
+		for (var i in rcv) {
+			setRcv(i)
+		}
+
+		action.msg(socket.id, 'Joined server')
+		observe.print('server')
 	})
 })

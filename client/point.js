@@ -25,6 +25,7 @@ var pt = {
 		obj.x = p.x
 		obj.y = p.y
 		obj.z = p.z
+		return obj
 	},
 	tan: function(p) {
 		return (p.x > 0 ? 0 : Math.PI) + Math.atan(p.y / p.x)

@@ -12,47 +12,54 @@
 
 	document.body.style.backgroundColor = 'black'
 
-	var socket = io()
+	var index = {
+		init: function() {
+			window.socket = io()
 
-	var action = {
-		msg: function(msg) {
-			socket.emit('msg', msg)
+			for (var i in index.rcv) {
+				socket.on(i, index.rcv[i])
+			}
+			for (var i in index.action) {
+				window[i] = index.action[i]
+			}
+
+			socket.emit('handShake', {
+				name: prompt('What is your name?', 'Johnny Appleseed')
+			})
 		},
-		kill: function() {
-			socket.emit('kill')
+		action: {
+			save: function() {
+				socket.emit('save')
+			},
+			msg: function(msg) {
+				socket.emit('msg', msg)
+			},
+			kill: function() {
+				socket.emit('kill')
+			},
+			status: function(cell) {
+				socket.emit('status', mg.status.observe(cell))
+			}
 		},
-		status: function(cell) {
-			socket.emit('status', mg.status.observe(cell))
+		rcv: {
+			handShake: function(data) {
+				socket.id = data.id
+				socket.name = data.name
+				console.log(`id: ${socket.id}, name: ${socket.name}`)
+				gameWindow.tick(gameWindow, index, mg.init, mg.tick)
+				mg.status.action(data.status)
+			},
+			msg: function(msg) {
+				console.log(msg)
+			},
+			kill: function() {
+				console.log('leaving server...')
+				socket.destroy()
+			},
+			status: function(status) {
+				mg.status.action(status)
+			}
 		}
 	}
-	var rcv = {
-		handShake: function(data) {
-			socket.id = data.id
-			socket.name = data.name
-			console.log(`id:${socket.id}, name:${socket.name}`)
-			mg.status.action(data.status)
-			gameWindow.tick(gameWindow, mg.init, mg.tick)
-		},
-		msg: function(msg) {
-			console.log(msg)
-		},
-		kill: function() {
-			console.log('leaving server...')
-			socket.destroy()
-		},
-		status: function(status) {
-			mg.status.action(status)
-		}
-	}
-
-	for (var i in rcv) {
-		socket.on(i, rcv[i])
-	}
-	for (var i in action) {
-		window[i] = action[i]
-	}
-
-	socket.emit('handShake', {
-		name: prompt('What is your name?', 'Johnny Appleseed')
-	})
+	index.init()
 </script>

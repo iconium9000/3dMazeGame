@@ -58,20 +58,20 @@ var gameWindow = {
 			e.prev.isDown = e.isDown
 		}
 	},
-	tick: function(e, i, f) {
+	tick: function(e, x, i, f) {
 		e.display.g = e.display.canvas.getContext('2d')
 		e.mouse.mouse = e.mouse
 		e.events.active = true
 
 		$(canvas).css('cursor', 'none')
 
-		i(e)
+		i(e, x)
 		tick()
 
 		function tick() {
 			e.display.update(e.display)
 
-			f(e)
+			f(e, x)
 
 			e.mouse.update(e.mouse)
 			e.keys.update(e.keys)
