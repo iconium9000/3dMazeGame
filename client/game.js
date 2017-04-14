@@ -176,12 +176,12 @@ var mg = {
 			}
 			if (mg.lvl) {
 				if (gw.keys.hasDown[' ']) {
-					console.log('switch player')
+					// console.log('switch player')
 					var flag = false
 					for (var i in mg.lvl.player) {
 						var plr = mg.lvl.player[i]
 						if (flag) {
-							console.log(`set player[${i}]: ${plr.string}`)
+							// console.log(`set player[${i}]: ${plr.string}`)
 							mg.player = plr
 							flag = false
 							break
@@ -191,7 +191,7 @@ var mg = {
 					}
 					if (flag) {
 						mg.player = mg.lvl.player[0]
-						console.log(`set player[0]: ${mg.player.string}`)
+						// console.log(`set player[0]: ${mg.player.string}`)
 					}
 				} else if (!mg.player) {
 					mg.player = mg.lvl.player[0]
