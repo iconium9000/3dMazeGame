@@ -122,11 +122,13 @@ var action = {
 	},
 	clear: function(id) {
 		action.msg(id, 'Clearing Level...')
+		action.emit(id, 'clear')
 		mg.clear()
 	},
 	save: function(id, msg) {
 		console.log(`${id}: ${msg || 'Saving game...'}`)
 		action.emit(id, 'save', msg || 'Saving game...')
+		action.msg(id, msg || 'Saving game...')
 
 		fs.writeFile('data.txt', JSON.stringify(mg.status.observe().states))
 	},

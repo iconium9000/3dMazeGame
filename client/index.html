@@ -28,8 +28,20 @@
 			})
 		},
 		action: {
+			zero: function() {
+				mg.shift = pt.zero()
+			},
+			brushSize: function(i) {
+				if (i > mg.maxBrushSize) {
+					mg.brushSize = mg.maxBrushSize
+				} else if (i < mg.minBrushSize) {
+					mg.brushSize = mg.minBrushSize
+				} else {
+					mg.brushSize = i
+				}
+			},
 			clear: function() {
-				socket.emit('save')
+				socket.emit('clear')
 			},
 			save: function() {
 				socket.emit('save')
@@ -51,6 +63,9 @@
 				console.log(`id: ${socket.id}, name: ${socket.name}`)
 				gameWindow.tick(gameWindow, index, mg.init, mg.tick)
 				mg.status.action(data.status)
+			},
+			clear: function() {
+				mg.clear()
 			},
 			msg: function(msg) {
 				console.log(msg)

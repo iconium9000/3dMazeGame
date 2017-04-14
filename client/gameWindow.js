@@ -78,6 +78,7 @@ var gameWindow = {
 			e.events.update(e.events)
 
 			if (e.events.active) {
+				$(canvas).css('cursor', 'none')
 				reqFrame(tick)
 			} else {
 				$(canvas).css('cursor', 'default')

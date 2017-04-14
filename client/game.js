@@ -46,12 +46,16 @@ var mg = {
 	all: {},
 	cells: {},
 	mode: 'game',
+	brushSize: 1,
+	maxBrushSize: 5,
+	minBrushSize: 1,
 	clear: function() {
-		cells = {}
-		all = {}
+		mg.cells = {}
+		mg.all = {}
 		for (var i in mg.states) {
-			all[i] = {}
+			mg.all[i] = {}
 		}
+		console.log('mg.clear()')
 	},
 	init: function(gw, idx) {
 		for (var i in mg.states) {
@@ -120,6 +124,7 @@ var mg = {
 				}()}
 			}
 			mg.update(cell)
+			idx.action.status(cell)
 		}`)
 
 	},
@@ -139,6 +144,13 @@ var mg = {
 			forEach(mg.all[n], s.draw)
 		}
 
+		for (var k = 1; k <= 9; ++k) {
+			if (gw.keys.hasDown[`${k}`] && mg.brushSize != k) {
+				mg.brushSize = k
+				console.log(`brushSize set to '${k}'`)
+			}
+		}
+
 		for (var i in mg.modes) {
 			var m = mg.modes[i]
 			var s = mg.states[i]
@@ -150,23 +162,82 @@ var mg = {
 		}
 
 		if (mg.mode == 'game') {
-			if (gw.keys.hasDown[' ']) {
-
+			var cell = mg.cell.observe.point(ms.point)
+			if (ms.isDown && cell) {
+				if (cell.level && (cell.level != mg.lvl)) {
+					mg.lvl = cell.level
+					mg.player = mg.lvl.player[0]
+					// console.log('Changed Level')
+				}
+				if (cell.player && (cell != mg.player)) {
+					mg.player = cell
+					// console.log('Changed Player')
+				}
+			}
+			if (mg.lvl) {
+				if (gw.keys.hasDown[' ']) {
+					console.log('switch player')
+					var flag = false
+					for (var i in mg.lvl.player) {
+						var plr = mg.lvl.player[i]
+						if (flag) {
+							console.log(`set player[${i}]: ${plr.string}`)
+							mg.player = plr
+							flag = false
+							break
+						} else if (mg.player == plr) {
+							flag = true
+						}
+					}
+					if (flag) {
+						mg.player = mg.lvl.player[0]
+						console.log(`set player[0]: ${mg.player.string}`)
+					}
+				} else if (!mg.player) {
+					mg.player = mg.lvl.player[0]
+				}
+				if (gw.keys.hasDown['Enter']) {
+					mg.locked = !mg.locked
+				}
+				if (mg.player) {
+					if (mg.portal && mg.player.portal && mg.player.gate.open) {
+						for (var i in mg.lvl.portal) {
+							var p = mg.lvl.portal[i]
+							if (p != mg.player && p.gate.open) {
+								mg.move(mg.player, p)
+								mg.portal = false
+								break
+							}
+						}
+					}
+					for (var i in mg.directions) {
+						var d = mg.directions[i]
+						if (gw.keys.hasDown[d.key]) {
+							mg.move(mg.player, mg.cell.observe.point(pt.sum(mg.player, d)))
+						}
+					}
+				}
 			}
 		} else if (mg.states[mg.mode] && (ms.hasDown || ms.isDown)) {
 			var cell = mg.cell.action.point(ms.point)
 			if (ms.hasDown) {
 				mg.state.set = mg.state.observe(cell, mg.mode)
 			}
-			mg.state.action(cell, mg.mode, mg.state.set)
-			idx.action.status(cell)
+			var shift = pt.zero()
+			var bs = mg.brushSize - 1
+			for (shift.x = -bs; shift.x <= bs; ++shift.x) {
+				for (shift.y = -bs; shift.y <= bs; ++shift.y) {
+					var cell = mg.cell.action.point(pt.sum(ms.point, shift))
+					mg.state.action(cell, mg.mode, mg.state.set)
+				}
+			}
 		}
 
 		g.strokeStyle = g.fillStyle = 'white'
-		ms.r = 10
+		ms.r = mg.cellSize / 2
 		pt.fillCircle(g, ms)
 		pt.drawRect(g, pt.apply({
-			r: ms.r
+			r: ms.r * (2 * mg.brushSize - 1)
 		}, mg.cell.pointToMouse(ms.point)))
 
 		mg.check()
@@ -215,6 +286,57 @@ var mg = {
 			}
 		}
 	},
+	move: function(prev, dest) {
+		if (prev && dest && prev.player && prev.level == dest.level) {
+			if (dest.player) {
+				mg.player = dest
+				mg.portal = dest.portal
+				mg.lvl = dest.level
+			} else if ((prev.space && (!prev.door || prev.gate.open)) && (dest.space && (!dest.door || dest.gate.open))) {
+				if (prev.pad && dest.door) {
+					if (prev.key) {
+						mg.state.action(prev, 'player', false)
+						mg.state.action(dest, 'player', true)
+						mg.player = dest
+						mg.portal = dest.portal
+						mg.lvl = dest.level
+					}
+				} else {
+					var locked = mg.locked
+					var destKey = dest.key
+					var prevKey = prev.key
+
+					if (prev.key && !dest.key && mg.locked) {
+						if (dest.pad) {
+							if (prev.square == dest.square) {
+								mg.state.action(prev, 'key', false)
+								mg.state.action(dest, 'key', true)
+							}
+						} else {
+							var square = prev.square && !dest.square
+							mg.state.action(prev, 'key', false)
+							mg.state.action(dest, 'key', true)
+							if (square) {
+								mg.state.action(dest, 'square', true)
+							}
+						}
+					}
+
+					if (destKey) {
+						mg.locked = true
+					} else if (prevKey && dest.pad) {
+						mg.locked = false
+					}
+
+					mg.state.action(prev, 'player', false)
+					mg.state.action(dest, 'player', true)
+					mg.player = dest
+					mg.portal = dest.portal
+					mg.lvl = dest.level
+				}
+			}
+		}
+	},
 	state: {
 		observe: null,
 		action: null
@@ -229,16 +351,35 @@ var mg = {
 				c.gate.open = false
 			}
 		}
-		mg.numPortals = 0
-		// TODO PORTAL LOGIC
+		mg.levels = []
+		mg.flag = {}
 		for (var i in mg.all.portal) {
-			mg.numPortals += mg.cells[i].gate.open
-		}
-		if (mg.numPortals > 2) {
-			for (var i in mg.all.portal) {
-				mg.cells[i].gate.open = false
+			var c = mg.cells[i]
+			if (c.level) {
+				if (c.gate.open) {
+					if (c.level.flag == mg.flag) {
+						++c.level.nPortals
+					} else {
+						c.level.flag = mg.flag
+						c.level.nPortals = 1
+						mg.levels.push(c.level)
+					}
+				} else if (c.level.flag != mg.flag) {
+					c.level.flag = mg.flag
+					c.level.nPortals = 0
+					mg.levels.push(c.level)
+				}
 			}
 		}
+		for (var i in mg.levels) {
+			var l = mg.levels[i]
+			if (l.nPortals != 2) {
+				for (var i in l.portal) {
+					l.portal[i].gate.open = false
+				}
+			}
+		}
+
 	},
 	gate: function(cell, gate) {
 		if (cell && cell.wire && (!gate || cell.gate != gate)) {
@@ -251,6 +392,23 @@ var mg = {
 			}
 			for (var i in mg.directions) {
 				mg.gate(cell[i], cell.gate)
+			}
+		}
+	},
+	level: function(cell, level) {
+		if (cell && cell.level && (!level || cell.level != level)) {
+			cell.level = level || {
+				portal: [],
+				player: []
+			}
+			if (cell.player) {
+				cell.level.player.push(cell)
+			}
+			if (cell.portal) {
+				cell.level.portal.push(cell)
+			}
+			for (var i in mg.directions) {
+				mg.level(cell[i], cell.level)
 			}
 		}
 	},
@@ -278,13 +436,14 @@ var mg = {
 
 		for (var i in mg.directions) {
 			cell[i] = mg.cell.observe.point(pt.sum(cell, mg.directions[i]))
-			if (cell[i] && !layer) {
-				mg.update(cell[i], true)
+			if (cell[i] && (cell.clear || !layer)) {
+				mg.update(cell[i], !cell.clear)
 			}
 		}
 
 		if (!layer && !cell.clear) {
 			mg.gate(cell)
+			mg.level(cell)
 		}
 	},
 	status: {
@@ -296,7 +455,7 @@ var mg = {
 					states: []
 				}
 				for (var i in mg.states) {
-					if (cell[i] == true) {
+					if (cell[i]) {
 						status.states.push(i)
 					}
 				}
@@ -320,7 +479,6 @@ var mg = {
 				console.log('failed to rcv status')
 			} else if (status.cell) {
 				var cell = mg.cell.action.string(status.string)
-
 				for (var i in mg.states) {
 					cell[i] = false
 				}
@@ -385,20 +543,9 @@ var mg = {
 			shape: 'drawCircle',
 			size: 'cellWidth',
 			sizeFactor: 2,
-			drawIf: `cell.level == true && isEqual(mg.mode, 'level', 'portal', 'player')`,
-			get: `if (cell) {
-
-			} else {
-				return true
-			}`,
+			drawIf: `cell.level && isEqual(mg.mode, 'level', 'portal', 'player')`,
 			add: `cell.level = true`,
-			remove: `cell.level = false`,
-			foreach: `if (mg.level == cell)
-				cell.mouse.r /= 2, pt.drawCircle(g, cell.mouse)
-				for (var i in cell.portal)
-					pt.drawLine(g, {a: cell.mouse,b: ptm(cell.portal[i])})
-				for (var i in cell.player)
-					pt.drawLine(g, {a: cell.mouse,b: ptm(cell.player[i])})`
+			remove: `cell.level = false`
 		},
 		'wall': {
 			color: '#808080',
@@ -419,16 +566,18 @@ var mg = {
 			shape: 'drawRect',
 			size: 'cellWidth',
 			sizeFactor: 6,
-			foreach: `if (cell.rt && cell.rt.wire)
+			foreach: `if (cell.rt && cell.rt.wire){
 					pt.drawLine(g, {
 						a: ptm(cell),
 						b: ptm(cell.rt)
 					})
-				if (cell.dn && cell.dn.wire)
+				}
+				if (cell.dn && cell.dn.wire) {
 					pt.drawLine(g, {
 						a: cell.mouse,
 						b: ptm(cell.dn)
-					})`,
+					})
+				}`,
 			add: `cell.wire = true `,
 			remove: `cell.wire = cell.door = cell.pad = cell.portal = false`
 		},
@@ -468,19 +617,10 @@ var mg = {
 			shape: 'drawRect',
 			size: 'cellSize',
 			sizeFactor: 2,
-			drawIf: `
-				cell.portal == true `,
-			foreach: `if (cell.level && (mg.mode == 'mode' || mg.mode == 'level'))
-					pt.drawLine(g, {
-						a: cell.mouse,
-						b: ptm(cell.level)
-					})`,
+			drawIf: `cell.portal == true `,
 			add: `cell.portal = cell.wire = cell.space = true
-				if (cell.level = mg.level) mg.level.portal[cell.string] = cell
-				cell.wall = cell.door = cell.pad = cell.player = cell.key = cell.square = false `,
-			remove: `cell.portal = false
-				if (cell.level) delete cell.level.portal[cell.string]
-				cell.level = false`
+				cell.wall = cell.door = cell.pad = cell.player = cell.key = cell.square = false`,
+			remove: `cell.portal = false`
 		},
 		'player': {
 			drawIf: `cell.player == true`,
@@ -489,14 +629,12 @@ var mg = {
 			shape: 'cross',
 			size: 'cellSize',
 			sizeFactor: 2,
-			foreach: `if (cell == mg.player)
-					pt.drawRect(g, cell.mouse)`,
+			foreach: `if (cell == mg.player) {
+					pt.drawRect(g, cell.mouse)
+				}`,
 			add: `cell.player = cell.space = true
-				if (cell.level = mg.level) mg.level.player[cell.string] = cell
-				cell.wall = cell.door = cell.portal = false `,
-			remove: `cell.player = false
-				if (cell.level) delete cell.level.player[cell.string]
-				cell.level = false`
+				cell.wall = false`,
+			remove: `cell.player = false `
 		},
 		'key': {
 			color: '#FFFFFF',
@@ -505,7 +643,7 @@ var mg = {
 			size: 'cellWidth',
 			sizeFactor: 2,
 			add: `cell.key = cell.space = true
-				cell.wall = cell.door = cell.portal = false `,
+				cell.wall = false `,
 			remove: `cell.key = false,
 				cell.square = cell.square && cell.pad `
 		},
