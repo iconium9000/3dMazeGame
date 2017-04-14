@@ -1,5 +1,4 @@
-<canvas id="canvas" style="boarder:1px solid #000000" cursor="none">
-	Your browser does not support canvas element
+<canvas id="canvas" style="boarder:1px solid #000000" cursor="none">Your browser does not support canvas element
 </canvas>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.2.6/jquery.js"></script>
 <script src="client/Emitter.js"></script>
@@ -7,7 +6,29 @@
 <script src="client/point.js"></script>
 <script src="client/game.js"></script>
 <script>
-	console.log('index.html: init')
+    var src = 'https://raw.githubusercontent.com/iconium9000/3dMazeGame/master/data.txt'
+    console.log('index.html: init')
 
-	document.body.style.backgroundColor = 'black'
+    document.body.style.backgroundColor = 'black'
+    var doc
+
+    var index = {
+        action: {
+            status: () => {}
+        }
+    }
+
+    var x = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP")
+    x.onreadystatechange = function() {
+        if (x.readyState == 4) {
+            var doc = JSON.parse(x.responseText)
+            gameWindow.tick(gameWindow, index, mg.init, mg.tick)
+            mg.status.action({
+                all: true,
+                states: doc
+            })
+        }
+    }
+    x.open("GET", src, true)
+    x.send()
 </script>

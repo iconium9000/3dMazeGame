@@ -1,6 +1,5 @@
 console.log('gameWindow.js: init')
 var gameWindow = {
-	socket: io(),
 	keys: {
 		isDown: [],
 		hasDown: [],
