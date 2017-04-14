@@ -396,7 +396,7 @@ var mg = {
 		}
 	},
 	level: function(cell, level) {
-		if (cell && cell.level && (!level || cell.level != level)) {
+		if (cell && (!level || cell.level != level)) {
 			cell.level = level || {
 				portal: [],
 				player: []
