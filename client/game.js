@@ -292,7 +292,8 @@ var mg = {
 				mg.player = dest
 				mg.portal = dest.portal
 				mg.lvl = dest.level
-			} else if ((prev.space && (!prev.door || prev.gate.open)) && (dest.space && (!dest.door || dest.gate.open))) {
+			} else if ((prev.space || prev.door) && (dest.space || dest.door) && (!prev.door || prev.gate.open) && (!dest.door || dest.gate.open)) {
+				console.log(`prev: ${prev.space && prev.door}, dest: ${dest.space && dest.door}`)
 				if (prev.pad && dest.door) {
 					if (prev.key) {
 						mg.state.action(prev, 'player', false)
