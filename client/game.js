@@ -543,7 +543,7 @@ var mg = {
 			shape: 'drawCircle',
 			size: 'cellWidth',
 			sizeFactor: 2,
-			drawIf: `cell.level && isEqual(mg.mode, 'level', 'portal', 'player')`,
+			drawIf: `cell.level && mg.mode == 'level'`,
 			add: `cell.level = true`,
 			remove: `cell.level = false`
 		},
