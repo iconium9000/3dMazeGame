@@ -40,6 +40,9 @@
 					mg.brushSize = i
 				}
 			},
+			reset: function() {
+				socket.emit('reset')
+			},
 			clear: function() {
 				socket.emit('clear')
 			},
@@ -64,19 +67,13 @@
 				gameWindow.tick(gameWindow, index, mg.init, mg.tick)
 				mg.status.action(data.status)
 			},
-			clear: function() {
-				mg.clear()
-			},
-			msg: function(msg) {
-				console.log(msg)
-			},
+			clear: mg.clear,
+			msg: console.log,
 			kill: function() {
 				console.log('leaving server...')
 				socket.destroy()
 			},
-			status: function(status) {
-				mg.status.action(status)
-			}
+			status: mg.status.action
 		}
 	}
 	index.init()

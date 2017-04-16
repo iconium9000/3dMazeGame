@@ -120,6 +120,16 @@ var action = {
 		console.log(msg)
 		action.emit(id, 'msg', msg)
 	},
+	reset: function(id) {
+		action.clear(id)
+		action.msg(id, 'Reseting Level...')
+		var status = {
+			all: true,
+			states: JSON.parse(fs.readFileSync('data.txt'))
+		}
+		mg.status.action(status)
+		action.emit(id, 'status', status)
+	},
 	clear: function(id) {
 		action.msg(id, 'Clearing Level...')
 		action.emit(id, 'clear')
@@ -149,6 +159,7 @@ function actionRcv(token) {
 	}
 }
 var rcv = {
+	reset: actionRcv('reset'),
 	clear: actionRcv('clear'),
 	save: actionRcv('save'),
 	msg: actionRcv('msg'),
