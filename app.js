@@ -129,7 +129,8 @@ var app = {
 
 			}
 
-			fs.writeFile('data.txt', JSON.stringify(save))
+			var text = JSON.stringify(save).replace(/},"/g, '},\n"').replace(/}},/g,'}\n},\n')
+			fs.writeFile('data.txt', text)
 		},
 		kick: (id, msg) => {
 

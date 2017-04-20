@@ -421,6 +421,10 @@ var mg = {
 
 			}
 
+			if (k['Enter'] && mg.sel.level) {
+				mg.sel.locked = !mg.sel.locked
+			}
+
 		},
 
 		// move player?
@@ -428,7 +432,6 @@ var mg = {
 			var plr = mg.sel.player
 
 			if (plr) {
-
 
 				if (mg.sel.portal && plr.portal && plr.wire.open) {
 					var lvl = mg.sel.level
