@@ -4,6 +4,7 @@
 <script src="client/Emitter.js"></script>
 <script src="client/gameWindow.js"></script>
 <script src="client/point.js"></script>
+<script src="client/functions.js"></script>
 <script src="client/game.js"></script>
 <script>
     var src = 'https://raw.githubusercontent.com/iconium9000/3dMazeGame/master/data.txt'
@@ -12,8 +13,8 @@
     document.body.style.backgroundColor = 'black'
     var doc
 
-    var index = {
-        action: {
+    var idx = {
+        set: {
             status: () => {}
         }
     }
@@ -22,13 +23,24 @@
     x.onreadystatechange = function() {
         if (x.readyState == 4) {
             var doc = JSON.parse(x.responseText)
-            gameWindow.tick(gameWindow, index, mg.init, mg.tick)
-            mg.status.action({
-                all: true,
-                states: doc
-            })
+            gw.tick(gw, idx, mg.init, mg.tick)
+
+            for (var i in doc) {
+              var flag = {}
+              var map = mg.cell.set.status(doc[i])
+
+              // update each of the modified cells
+      				mg.tf.updateBrushMap(map)
+
+      				// efficiently distribute levels to each fo the modified cells
+      				mg.tf.distributeWires(map, flag)
+
+      				// efficiently distribute levels to each of the modified cells
+      				mg.tf.distributeLevels(map, flag)
+            }
         }
     }
+
     x.open("GET", src, true)
     x.send()
 </script>

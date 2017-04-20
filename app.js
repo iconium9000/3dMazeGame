@@ -1,204 +1,192 @@
-console.log('app.js: init')
+console.log('exp.js: init')
 // ----------------------------------------
 // Setup
 // ----------------------------------------
 var express = require('express')
-var app = express()
-var serv = require('http').Server(app)
+var exp = express()
+var serv = require('http').Server(exp)
 var io = require('socket.io')(serv, {})
 var fs = require('fs')
 var pt = require('./client/point.js')
 var mg = require('./client/game.js')
+var fu = require('./client/functions.js')
 var Emitter = require('./client/Emitter.js')
-var limbo = false
 
-app.get('/', function(req, res) {
-	res.sendFile(__dirname + '/client/index.html')
-})
-app.use('/client', express.static(__dirname + '/client'))
-var port = 2000
-serv.listen(port)
+var app = {
+	sockets: {},
+	init: () => {
 
-var sockets = {}
+		exp.get('/', (req, res) => res.sendFile(__dirname + '/client/index.html'))
+		exp.use('/client', express.static(__dirname + '/client'))
 
-mg.status.action({
-	all: true,
-	states: JSON.parse(fs.readFileSync('data.txt'))
-})
+		var port = 2000
+		serv.listen(port)
 
-// ----------------------------------------
-// Functions
-// ----------------------------------------
+		process.openStdin().addListener("data", d => app.set.console(fu.strsplit(d.toString().trim(), ' ')))
 
-function strsplit(string, char) {
-	var index = string.indexOf(char)
-	if (index < 0) {
-		return {
-			token: string,
-			msg: ''
-		}
-	} else {
-		return {
-			token: string.substr(0, index),
-			msg: string.substr(index + 1)
-		}
-	}
-}
+		io.sockets.on('connection', socket => socket.on('handShake', info => app.get.handShake(socket, info)))
 
-function strkey(array, element) {
-	var k = Object.keys(array)
-	var i = 0
-	var string = ''
-	while (i < k.length) {
-		string += array[k[i]][element]
-		if (i++ < k.length - 1) {
-			string += ', '
-		}
-	}
-	return `[${string}]`
-}
+		mg.init()
 
-// ----------------------------------------
-// Console Setup
-// ----------------------------------------
+		app.set.reset('server')
 
-process.openStdin().addListener("data", function(d) {
-	var s = strsplit(d.toString().trim(), ' ')
-	if (action[s.token]) {
-		action[s.token]('server', s.msg)
-	}
-})
-
-var updated = true
-setInterval(function() {
-	if (!updated && !limbo && !mg.game) {
-		action.save('server', 'Autosaving game...')
-		updated = true
-	}
-}, 1e5)
-
-var observe = {
-	rand: function() {
-		var id = Math.random()
-		return sockets[id] ? observe.rand() : id
+		console.log('Server Active')
 	},
-	opped: function(id) {
-		return id == 'server' || socket[id].opped
-	},
-	name: function(id) {
-		return id == 'server' ? id : sockets[id].name
-	},
-	print: function(id) {
-		action.msg(id, strkey(sockets, 'name'))
-	}
-}
-var action = {
-	lambda: function(id, f) {
-		for (var i in sockets) {
-			f(sockets[i])
-		}
-	},
-	emit: function(id, token, msg) {
-		for (var i in sockets) {
-			sockets[i].emit(token, msg)
-		}
-	},
-	emitnor: function(id, token, msg) {
-		for (var i in sockets) {
-			if (id != i) {
-				sockets[i].emit(token, msg)
+
+	// Set (send)
+	set: {
+		console: (set) => {
+			// set: {<token>, <msg>}
+			if (app.set[set.token]) {
+				app.set[set.token]('server', set.msg)
 			}
-		}
-	},
-	op: function(id) {
-		if (id != 'server' && sockets[id]) {
-			sockets[id].op = true
-		}
-	},
-	msg: function(id, msg) {
-		msg = `${observe.name(id)}: ${msg}`
-		console.log(msg)
-		action.emit(id, 'msg', msg)
-	},
-	reset: function(id) {
-		action.clear(id)
-		action.msg(id, 'Reseting Level...')
-		var status = {
-			all: true,
-			states: JSON.parse(fs.readFileSync('data.txt'))
-		}
-		mg.status.action(status)
-		action.emit(id, 'status', status)
-	},
-	clear: function(id) {
-		action.msg(id, 'Clearing Level...')
-		action.emit(id, 'clear')
-		mg.clear()
-	},
-	save: function(id, msg) {
-		console.log(`${id}: ${msg || 'Saving game...'}`)
-		action.emit(id, 'save', msg || 'Saving game...')
-		action.msg(id, msg || 'Saving game...')
+		},
+		handShake: (id, info) => {
 
-		fs.writeFile('data.txt', JSON.stringify(mg.status.observe().states))
+			// get socket from id
+			var s = app.sockets[info.id]
+
+			s.emit('handShake', info)
+
+
+			for (var i in mg.level) {
+
+				var l = mg.level[i].cell
+				var u = {}
+
+				for (var j in l) {
+					u[j] = mg.cell.get.status(l[j])
+				}
+
+				s.emit('status', u)
+			}
+
+			app.set.msg('server', `New Client '${s.name}'`)
+
+		},
+		emit: (token, msg, id) => {
+			for (var i in app.sockets) {
+				if (i != id) {
+					app.sockets[i].emit(token, msg)
+				}
+			}
+		},
+
+		reset: (id, msg) => {
+
+			app.set.msg('server', msg || 'Reseting level...')
+
+			var data = JSON.parse(fs.readFileSync('data.txt'))
+
+			// data is an array of objects
+			//	preferably (but not neccesarily) broken up into groups of levels
+			for (var i in data) {
+
+				// data[i] is a level in 'status' state
+
+				// get
+				var map = mg.cell.set.status(data[i])
+				var flag = {}
+
+				// update each of the modified cells
+				mg.tf.updateBrushMap(map)
+
+				// efficiently distribute levels to each fo the modified cells
+				mg.tf.distributeWires(map, flag)
+
+				// efficiently distribute levels to each of the modified cells
+				mg.tf.distributeLevels(map, flag)
+
+				// send status clients
+				app.set.emit('status', data[i])
+			}
+
+
+		},
+
+
+		msg: (id, msg) => {
+			console.log(msg = `server: '${msg}'`)
+			app.set.emit('msg', msg)
+		},
+		print: (id, msg) => {
+			eval(`console.log(${msg})`)
+		},
+		save: (id, msg) => {
+			app.set.msg('server', msg || 'Saving Game...')
+
+			var save = []
+
+			for (var i in mg.level) {
+				var l = mg.level[i].cell
+
+				var s = {}
+				for (var j in l) {
+					s[j] = mg.cell.get.status(l[j])
+				}
+
+				save.push(s)
+
+			}
+
+			fs.writeFile('data.txt', JSON.stringify(save))
+		},
+		kick: (id, msg) => {
+
+		}
 	},
-	kill: function(id) {
-		var id = id || 'server'
-		observe.print(id)
-		action.save(id)
-		action.emit(id, 'kill')
-	},
-	y: function() {
-		process.exit(0)
+
+	// Get (Receive)
+	get: {
+		handShake: (socket, info) => {
+
+			app.sockets[socket.id = fu.randKey(app.sockets)] = socket
+			socket.name = info
+
+			info = {
+				id: socket.id,
+				name: socket.name
+			}
+
+			var f = i => socket.on(i, msg => app.get[i](socket, msg))
+			for (var i in app.get) {
+				f(i)
+			}
+
+			app.set.handShake('server', info)
+		},
+
+		disconnect: (socket) => {
+
+			app.set.msg('server', `Disconnected '${socket.name}'`)
+
+			delete app.sockets[socket.id]
+		},
+
+		msg: (socket, msg) => {
+			msg = `${socket.name}: '${msg}'`
+			console.log(msg)
+			app.set.emit('msg', msg)
+		},
+
+		status: (socket, status) => {
+
+			var flag = {}
+			var map = mg.cell.set.status(status)
+
+			// update each of the modified cells
+			mg.tf.updateBrushMap(map)
+
+			// efficiently distribute levels to each fo the modified cells
+			mg.tf.distributeWires(map, flag)
+
+			// efficiently distribute levels to each of the modified cells
+			mg.tf.distributeLevels(map, flag)
+
+			app.set.emit('status', status, socket.id)
+
+		}
 	}
 }
 
-function actionRcv(token) {
-	return function(socket, msg) {
-		action[token](socket.id, msg)
-	}
-}
-var rcv = {
-	reset: actionRcv('reset'),
-	clear: actionRcv('clear'),
-	save: actionRcv('save'),
-	msg: actionRcv('msg'),
-	kill: actionRcv('kill'),
-	status: function(socket, status) {
-		mg.status.action(status)
-		action.emitnor(socket.id, 'status', status)
-	},
-	disconnect: function(socket) {
-		action.msg(socket.id, 'Disconnected from server')
-		delete sockets[socket.id]
-		observe.print('server')
-	}
-}
-
-// ----------------------------------------
-// Socket Setup
-// ----------------------------------------
-console.log("Server Active")
-
-io.sockets.on('connection', function(socket) {
-	socket.on('handShake', function(info) {
-		socket.name = info.name
-		info.id = socket.id = observe.rand()
-		sockets[info.id] = socket
-		info.status = mg.status.observe()
-		socket.emit('handShake', info)
-
-		function setRcv(i) {
-			socket.on(i, function(msg) {
-				rcv[i](socket, msg)
-			})
-		}
-
-		for (var i in rcv) {
-			setRcv(i)
-		}
-
-		action.msg(socket.id, 'Joined server')
-		observe.print('server')
-	})
-})
+app.init()

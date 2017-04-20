@@ -134,30 +134,37 @@ var pt = {
 			z: p.z
 		}
 	},
-	drawLine: function(g, l) {
+	drawLine: function(g, a, b) {
 		g.beginPath()
-		g.moveTo(l.a.x, l.a.y)
-		g.lineTo(l.b.x, l.b.y)
+		if (b) {
+			g.moveTo(a.x, a.y)
+			g.lineTo(b.x, b.y)
+		} else {
+			g.moveTo(a.a.x, a.a.y)
+			g.lineTo(a.b.x, a.b.y)
+		}
 		g.stroke()
 	},
-	drawCircle: function(g, c) {
+	drawCircle: function(g, c, r) {
 		g.beginPath()
-		g.arc(c.x, c.y, c.r, c.r, 0, 2 * Math.PI)
+		g.arc(c.x, c.y, r || c.r, r || c.r, 0, 2 * Math.PI)
 		g.stroke()
 	},
-	fillCircle: function(g, c) {
+	fillCircle: function(g, c, r) {
 		g.beginPath()
-		g.arc(c.x, c.y, c.r, c.r, 0, 2 * Math.PI)
+		g.arc(c.x, c.y, r || c.r, r || c.r, 0, 2 * Math.PI)
 		g.fill()
 	},
-	drawRect: function(g, c) {
+	drawRect: function(g, c, r) {
 		g.beginPath()
-		g.rect(c.x - c.r, c.y - c.r, 2 * c.r, 2 * c.r)
+		r = r || c.r
+		g.rect(c.x - r, c.y - r, 2 * r, 2 * r)
 		g.stroke()
 	},
-	fillRect: function(g, c) {
+	fillRect: function(g, c, r) {
 		g.beginPath()
-		g.rect(c.x - c.r, c.y - c.r, 2 * c.r, 2 * c.r)
+		r = r || c.r
+		g.rect(c.x - r, c.y - r, 2 * r, 2 * r)
 		g.fill()
 	}
 }

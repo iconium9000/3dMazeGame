@@ -6,75 +6,70 @@
 <script src="client/Emitter.js"></script>
 <script src="client/gameWindow.js"></script>
 <script src="client/point.js"></script>
+<script src="client/functions.js"></script>
 <script src="client/game.js"></script>
 <script>
 	console.log('index.html: init')
 
 	document.body.style.backgroundColor = 'black'
 
-	var index = {
-		init: function() {
-			window.socket = io()
+	var idx = {
+		socket: io(),
 
-			for (var i in index.rcv) {
-				socket.on(i, index.rcv[i])
-			}
-			for (var i in index.action) {
-				window[i] = index.action[i]
-			}
-
-			socket.emit('handShake', {
-				name: prompt('What is your name?', 'Johnny Appleseed')
-			})
-		},
-		action: {
-			zero: function() {
-				mg.shift = pt.zero()
-			},
-			brushSize: function(i) {
-				if (i > mg.maxBrushSize) {
-					mg.brushSize = mg.maxBrushSize
-				} else if (i < mg.minBrushSize) {
-					mg.brushSize = mg.minBrushSize
-				} else {
-					mg.brushSize = i
+		// set: send
+		set: {
+			handShake: () => {
+				for (var i in idx.set) {
+					window[i] = idx.set[i]
 				}
+				var f = i => idx.socket.on(i, idx.get[i])
+				for (var i in idx.get) {
+					f(i)
+				}
+
+				idx.socket.emit('handShake', prompt('What is you name?', 'Johnny Appleseed'))
 			},
-			reset: function() {
-				socket.emit('reset')
+
+			status: s => {
+				idx.socket.emit('status', s)
 			},
-			clear: function() {
-				socket.emit('clear')
-			},
-			save: function() {
-				socket.emit('save')
-			},
-			msg: function(msg) {
-				socket.emit('msg', msg)
-			},
-			kill: function() {
-				socket.emit('kill')
-			},
-			status: function(cell) {
-				socket.emit('status', mg.status.observe(cell))
+
+			msg: msg => {
+				idx.socket.emit('msg', msg)
 			}
 		},
-		rcv: {
-			handShake: function(data) {
-				socket.id = data.id
-				socket.name = data.name
-				console.log(`id: ${socket.id}, name: ${socket.name}`)
-				gameWindow.tick(gameWindow, index, mg.init, mg.tick)
-				mg.status.action(data.status)
+
+		// get: rcv
+		get: {
+
+			// TODO
+			handShake: info => {
+
+				idx.name = info.name
+				idx.id = info.id
+
+				gw.tick(gw, idx, mg.init, mg.tick)
 			},
-			clear: mg.clear,
-			msg: console.log,
-			kill: function() {
-				console.log('leaving server...')
-				socket.destroy()
+
+			// TODO
+			status: status => {
+				var flag = {}
+				var map = mg.cell.set.status(status)
+
+				// update each of the modified cells
+				mg.tf.updateBrushMap(map)
+
+				// efficiently distribute levels to each fo the modified cells
+				mg.tf.distributeWires(map, flag)
+
+				// efficiently distribute levels to each of the modified cells
+				mg.tf.distributeLevels(map, flag)
 			},
-			status: mg.status.action
+
+			msg: console.log
+
 		}
 	}
-	index.init()
+
+	idx.set.handShake()
 </script>
