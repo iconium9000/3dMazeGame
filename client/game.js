@@ -118,11 +118,8 @@ var mg = {
 		// send each of the modified cells
 		mg.tf.sendBrushStates(map)
 
-		// efficiently distribute levels to each fo the modified cells
-		mg.tf.distributeWires(map, flag)
-
-		// efficiently distribute levels to each of the modified cells
-		mg.tf.distributeLevels(map, flag)
+		// TODO
+		mg.tf.spread(map, flag)
 
 		// If in gamemode...
 
@@ -339,15 +336,11 @@ var mg = {
 
 		},
 
-		distributeWires: (map, flag) => {
+		spread: (map, flag) => {
 
 			for (var i in map) {
 				mg.cell.wire(map[i], flag, null, map)
 			}
-
-		},
-
-		distributeLevels: (map, flag) => {
 
 			for (var i in map) {
 				mg.cell.level(map[i], flag, null, map)
@@ -659,8 +652,7 @@ var mg = {
 		var flag = {}
 		map[c.string] = c
 		mg.tf.updateBrushMap(map)
-		mg.tf.distributeWires(map, flag)
-		mg.tf.distributeLevels(map, flag)
+		mg.tf.spread(map, flag)
 
 		var status = {}
 		status[c.string] = mg.cell.get.status(c)

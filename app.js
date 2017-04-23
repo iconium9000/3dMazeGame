@@ -91,11 +91,8 @@ var app = {
 				// update each of the modified cells
 				mg.tf.updateBrushMap(map)
 
-				// efficiently distribute levels to each fo the modified cells
-				mg.tf.distributeWires(map, flag)
-
-				// efficiently distribute levels to each of the modified cells
-				mg.tf.distributeLevels(map, flag)
+				// TODO
+				mg.tf.spread(map, flag)
 
 				// send status clients
 				app.set.emit('status', data[i])
@@ -180,11 +177,8 @@ var app = {
 			// update each of the modified cells
 			mg.tf.updateBrushMap(map)
 
-			// efficiently distribute levels to each fo the modified cells
-			mg.tf.distributeWires(map, flag)
-
-			// efficiently distribute levels to each of the modified cells
-			mg.tf.distributeLevels(map, flag)
+			// TODO
+			mg.tf.spread(map, flag)
 
 			app.set.emit('status', status, socket.id)
 
