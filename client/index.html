@@ -36,6 +36,9 @@
 
 			msg: msg => {
 				idx.socket.emit('msg', msg)
+			},
+			save: msg => {
+				idx.socket.emit('save', msg)
 			}
 		},
 

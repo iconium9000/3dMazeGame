@@ -170,6 +170,8 @@ var app = {
 			app.set.emit('msg', msg)
 		},
 
+		save: (socket, msg) => app.set.save(socket.id, msg),
+
 		status: (socket, status) => {
 
 			var flag = {}
